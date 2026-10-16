@@ -1,0 +1,40 @@
+/* THE DIGITAL CREDENTIAL: shared styles for the credential pages. Tokens come from globals.css. */
+
+.dc-paper {
+  background-color: var(--white);
+  /* Faint paper fibre: two crossed repeating gradients at very low contrast. No images. */
+  background-image:
+    repeating-linear-gradient(0deg, rgba(16, 26, 43, 0.018) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(16, 26, 43, 0.012) 0 1px, transparent 1px 4px);
+}
+
+.dc-sheet {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: var(--sheet-shadow);
+}
+
+/* The cobalt verification line: drawn once when it enters view. */
+.dc-vline {
+  height: 2px;
+  background: var(--signal);
+  transform-origin: left center;
+}
+
+.dc-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-soft);
+}
+
+.dc-ink-rule {
+  border-top: 1px solid var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-vline {
+    transform: none !important;
+  }
+}

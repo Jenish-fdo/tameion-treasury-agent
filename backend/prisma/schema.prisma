@@ -1,0 +1,79 @@
+// Prisma schema for Credentia backend
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Identity {
+  id            String        @id @default(uuid())
+  did           String        @unique
+  owner         String
+  didDocument   String        @db.Text
+  isActive      Boolean       @default(true)
+  isAIAgent     Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  attestations  Attestation[] @relation("IdentityAttestations")
+  credentials   Credential[]  @relation("IdentityCredentials")
+  
+  @@index([owner])
+  @@index([did])
+  @@map("identities")
+}
+
+model Attestation {
+  id            String   @id @default(uuid())
+  identityId    String
+  issuer        String
+  schema        String
+  data          String   @db.Text
+  signature     String
+  isRevoked     Boolean  @default(false)
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  identity      Identity @relation("IdentityAttestations", fields: [identityId], references: [id])
+  
+  @@index([identityId])
+  @@index([issuer])
+  @@map("attestations")
+}
+
+model Credential {
+  id            String   @id @default(uuid())
+  identityId    String
+  issuer        String
+  type          String
+  data          String   @db.Text
+  proof         String   @db.Text
+  isRevoked     Boolean  @default(false)
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  identity      Identity @relation("IdentityCredentials", fields: [identityId], references: [id])
+  
+  @@index([identityId])
+  @@index([issuer])
+  @@index([type])
+  @@map("credentials")
+}
+
+model TrustScore {
+  id            String   @id @default(uuid())
+  did           String   @unique
+  score         Float    @default(0)
+  factors       String   @db.Text // JSON
+  calculatedAt  DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([did])
+  @@map("trust_scores")
+}

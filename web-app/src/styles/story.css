@@ -1,0 +1,40 @@
+/* Landing story: motion is progressive enhancement. Everything is visible by default; JS only
+   arms the pending/undrawn states for content below the fold. Only transform/opacity animate. */
+
+.story { --header-h: 4.5rem; scroll-padding-top: calc(var(--header-h) + 1rem); }
+.story section[id] { scroll-margin-top: calc(var(--header-h) + 0.5rem); }
+
+[data-reveal] { transition: opacity 0.6s ease, transform 0.6s ease; transition-delay: var(--d, 0ms); }
+[data-reveal].is-pending { opacity: 0; transform: translateY(14px); }
+
+.story-sticky { position: sticky; top: calc(var(--header-h) + 1.5rem); }
+@media (max-width: 1023px) { .story-sticky { position: static; } }
+
+/* Annotation lines: drawn with stroke-dashoffset (path has pathLength="1"). */
+.line-draw { stroke-dasharray: 1; stroke-dashoffset: 0; transition: stroke-dashoffset 0.9s ease; }
+.line-draw.is-armed { stroke-dashoffset: 1; }
+.line-draw.is-armed.is-drawn { stroke-dashoffset: 0; }
+
+/* Dossier inserts arrive in order as the reader scrolls. */
+.insert { transition: opacity 0.5s ease, transform 0.5s ease; }
+.insert.is-pending { opacity: 0; transform: translateX(16px); }
+
+/* Redaction bar: ink block; the real text is replaced, not hidden under it. */
+.redact { display: inline-block; height: 1em; width: var(--w, 7rem); vertical-align: -0.12em; background: var(--ink); }
+
+/* Decision stamp: one arrival animation. */
+.stamp-wrap { transform: rotate(-3deg); transform-origin: center; }
+.stamp-arrive { animation: stamp-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.15) both; }
+@keyframes stamp-in { from { opacity: 0; transform: scale(1.18); } to { opacity: 1; transform: scale(1); } }
+
+/* Reduced motion: a readable, static, stacked document. */
+@media (prefers-reduced-motion: reduce) {
+  .story *, .story *::before, .story *::after { animation: none !important; transition: none !important; }
+  .story [data-reveal].is-pending, .story .insert.is-pending { opacity: 1; transform: none; }
+  .story .story-sticky { position: static; }
+  .story .line-draw, .story .line-draw.is-armed { stroke-dashoffset: 0; }
+}
+.story[data-motion='reduce'] *, .story[data-motion='reduce'] *::before, .story[data-motion='reduce'] *::after { animation: none !important; transition: none !important; }
+.story[data-motion='reduce'] [data-reveal].is-pending, .story[data-motion='reduce'] .insert.is-pending { opacity: 1; transform: none; }
+.story[data-motion='reduce'] .story-sticky { position: static; }
+.story[data-motion='reduce'] .line-draw, .story[data-motion='reduce'] .line-draw.is-armed { stroke-dashoffset: 0; }

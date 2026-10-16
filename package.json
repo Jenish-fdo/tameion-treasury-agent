@@ -1,0 +1,48 @@
+{
+  "name": "credentia",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portable Identity & Trust Layer for AI Agents and Humans on Monad",
+  "keywords": [
+    "identity",
+    "web3",
+    "monad",
+    "decentralized-identity",
+    "attestations",
+    "ai-agents",
+    "monorepo"
+  ],
+  "homepage": "https://credentia.xyz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/credentia/credentia.git"
+  },
+  "license": "MIT",
+  "workspaces": [
+    "contracts",
+    "backend",
+    "web-app",
+    "mobile-sdk",
+    "metamask-snap"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "clean": "pnpm -r clean && rm -rf node_modules",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "prettier": "^3.3.2",
+    "typescript": "^5.5.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.5.0"
+}

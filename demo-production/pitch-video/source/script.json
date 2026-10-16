@@ -1,0 +1,86 @@
+[
+ {
+  "id": "p1",
+  "speech": "Anyone can make a certificate look real.",
+  "sub": "Anyone can make a certificate look real.",
+  "dur": 2.45
+ },
+ {
+  "id": "p2",
+  "speech": "A P D F can be edited. [[slnc 160]] A screenshot can be faked. [[slnc 160]] And a real check can take days.",
+  "sub": "A PDF can be edited. A screenshot can be faked. And a real check can take days.",
+  "dur": 6.03
+ },
+ {
+  "id": "p3",
+  "speech": "So employers and programs either wait, or skip the check. [[slnc 160]] And the people who actually earned something have no portable proof.",
+  "sub": "So employers and programs either wait, or skip the check. And the people who actually earned something have no portable proof.",
+  "dur": 7.19
+ },
+ {
+  "id": "p4",
+  "speech": "We're the team behind Cre-den-sha, built for Moh-nad Metropolis.",
+  "sub": "We're the team behind Credentia, built for Monad Metropolis.",
+  "dur": 4.12
+ },
+ {
+  "id": "p5",
+  "speech": "We're building it because checking a credential should take seconds, not days, [[slnc 140]] and because proof should belong to the person who earned it.",
+  "sub": "We're building it because checking a credential should take seconds, not days, and because proof should belong to the person who earned it.",
+  "dur": 7.42
+ },
+ {
+  "id": "p6",
+  "speech": "Cre-den-sha anchors a fingerprint of a credential on Moh-nad. [[slnc 140]] Open the link, and the check runs against the chain. No account. No wallet.",
+  "sub": "Credentia anchors a fingerprint of a credential on Monad. Open the link, and the check runs against the chain. No account. No wallet.",
+  "dur": 8.61
+ },
+ {
+  "id": "p6b",
+  "speech": "It's for hackathons, bootcamps, employers, and anyone who's ever had to take a certificate on trust.",
+  "sub": "It's for hackathons, bootcamps, employers, and anyone who's ever had to take a certificate on trust.",
+  "dur": 6.73
+ },
+ {
+  "id": "p7",
+  "speech": "Here's a real credential on Moh-nad testnet. [[slnc 120]] Verified.",
+  "sub": "Here's a real credential on Monad testnet. Verified.",
+  "dur": 3.66
+ },
+ {
+  "id": "p8",
+  "speech": "Now change one detail in the link.",
+  "sub": "Now change one detail in the link.",
+  "dur": 2.05
+ },
+ {
+  "id": "p9",
+  "speech": "The fingerprint no longer matches, [[slnc 160]] and Cre-den-sha says so.",
+  "sub": "The fingerprint no longer matches, and Credentia says so.",
+  "dur": 3.72
+ },
+ {
+  "id": "p10",
+  "speech": "And when an issuer withdraws a credential, the page says revoked.",
+  "sub": "And when an issuer withdraws a credential, the page says revoked.",
+  "dur": 3.78
+ },
+ {
+  "id": "p11",
+  "speech": "These are real transactions on Moh-nad testnet, [[slnc 120]] backed by one hundred seventy eight contract tests, two hundred forty two web tests, [[slnc 120]] and a backtest with five people.",
+  "sub": "Real transactions on Monad testnet, 178 contract tests, 242 web tests, and a backtest with five people.",
+  "dur": 10.14
+ },
+ {
+  "id": "p12",
+  "speech": "It's live on Moh-nad testnet today. [[slnc 160]] Next: a real identity check for issuers, private selective disclosure, and mainnet.",
+  "sub": "It's live on Monad testnet today. Next: a real identity check for issuers, private selective disclosure, and mainnet.",
+  "dur": 8.18
+ },
+ {
+  "id": "p13",
+  "speech": "Cre-den-sha. [[slnc 380]] Don't trust the claim. [[slnc 280]] Verify the credential.",
+  "sub": "Credentia. Don't trust the claim. Verify the credential.",
+  "dur": 4.74
+ }
+]

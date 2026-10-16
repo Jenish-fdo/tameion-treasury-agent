@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: credentia-indexer
+description: Credential status, verification history and issuer reputation for Credentia on Monad Testnet
+chains:
+  - id: 10143
+    # Token-free local data source: the public Monad Testnet RPC is the primary source (no HyperSync token needed).
+    rpc:
+      - url: https://testnet-rpc.monad.xyz
+        for: sync
+        initial_block_interval: 100
+    # Monad Testnet deployment (public). Registry deployed at block 70607269; the local token-free RPC source reads only ~100 blocks
+    # per request, so this starts just before the first credential (block 70640655). Use HyperSync (ENVIO_API_TOKEN) with start_block 70607269 for the full history.
+    start_block: 70640600
+    contracts:
+      - name: CredentialRegistry
+        address: "0x335de4487bfcc2Aa3D0E68ad67759616DFD25113"
+        events:
+          - event: CredentialIssued(bytes32 indexed id, address indexed issuer, address indexed holder, bytes32 credentialType, uint256 expiryTimestamp)
+          - event: CredentialRevoked(bytes32 indexed id, address indexed revokedBy, bytes32 reason)
+          - event: HighAssuranceCredentialIssued(bytes32 indexed id)
+          - event: CredentialChecked(bytes32 indexed id, address indexed verifier, bool valid)
+          - event: IssuerAuthorized(address indexed issuer)
+          - event: IssuerRevoked(address indexed issuer)
+      - name: CviAttestationOracle
+        address: "0x1C825e31a873e227dE77Ec184fd17C25B36508B0"
+        events:
+          - event: IdentityAttested(address indexed wallet, address indexed attester, uint8 tier, uint64 expiresAt, bytes32 evidenceHash)
+          - event: IdentityRevoked(address indexed wallet, address indexed attester, bytes32 reason)
+field_selection:
+  transaction_fields:
+    - hash

@@ -1,0 +1,450 @@
+openapi: 3.0.3
+info:
+  title: Credentia API
+  version: 1.0.0
+  description: |
+    REST API for issuing and verifying on-chain credentials (CredentialRegistry on Monad), reading
+    trust scores (TrustScore), and getting an AI consensus verdict on a proposed agent payment.
+
+    **Authentication.** Send an API key in the `X-API-Key` header or as `Authorization: Bearer <key>`.
+    Keys are never accepted in query strings. Keys are configured server-side via `API_KEYS`
+    (free tier) and `PRO_API_KEYS` (pro tier).
+
+    **Rate limits.** Per API key, per minute: 100 requests on the free tier, 1000 on pro (configurable
+    with `RATE_LIMIT_FREE_PER_MIN` / `RATE_LIMIT_PRO_PER_MIN`). Exceeding it returns `429`.
+    Repeated invalid keys from one IP are also throttled.
+
+    **Errors.** Every error uses the same envelope and includes a `requestId` that matches the server log line.
+servers:
+  - url: http://localhost:3001/api/v1
+    description: Local development
+security:
+  - ApiKeyHeader: []
+  - BearerAuth: []
+tags:
+  - name: Credentials
+  - name: Trust
+  - name: Intent
+  - name: Agents
+
+paths:
+  /credential/mint:
+    post:
+      tags: [Credentials]
+      summary: Issue a credential
+      description: |
+        Signs an EIP-712 `CredentialRequest` with the issuer's key (held by the server, never sent in
+        the request) and submits `issueCredentialWithSig` to the CredentialRegistry.
+
+        The registry stores only a hash of the metadata URI; the URI and type string are kept off-chain by
+        the API and are returned by verify only when they match the on-chain hash.
+
+        `credentialType` may be a free-text label (hashed with keccak256) or an exact `0x` bytes32 value.
+        The `issuer` must be a managed issuer that is authorized in the registry.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MintRequest' }
+            example:
+              issuer: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+              subject: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
+              credentialType: KYC
+              metadataUri: https://example.com/credentials/kyc-1.json
+              expiresAt: 1798761600
+      responses:
+        '201':
+          description: Mined and confirmed on-chain.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MintResponse' }
+        '202':
+          description: Submitted, but no receipt yet within `TX_CONFIRM_TIMEOUT_MS`. Poll the verify endpoint.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MintResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: No signing key is configured for the issuer (`ISSUER_NOT_MANAGED`), or the issuer is not authorized in the registry (`ISSUER_NOT_AUTHORIZED`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: A credential with the same issuer, subject, type and metadata already exists (`CREDENTIAL_EXISTS`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/Internal' }
+        '502': { $ref: '#/components/responses/UpstreamChain' }
+        '503': { $ref: '#/components/responses/NotConfigured' }
+
+  /credential/{credentialId}/verify:
+    get:
+      tags: [Credentials]
+      summary: Verify a credential
+      description: Reads the credential from the CredentialRegistry. `valid` is the registry's `verifyCredential` result (exists, not revoked, not expired).
+      parameters:
+        - name: credentialId
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Bytes32' }
+      responses:
+        '200':
+          description: 'Credential found. A revoked or expired credential is still 200 with valid false.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VerifyResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: No credential with this ID (`CREDENTIAL_NOT_FOUND`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/Internal' }
+        '502': { $ref: '#/components/responses/UpstreamChain' }
+        '503': { $ref: '#/components/responses/NotConfigured' }
+
+  /trust-score/{address}:
+    get:
+      tags: [Trust]
+      summary: Get an address's trust score
+      description: |
+        Reads the TrustScore contract. Scores are stored in basis points (0-10000) and returned both
+        raw (`scoreBps`) and as 0-100 points. The breakdown has the contract's three weighted factors.
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Address' }
+      responses:
+        '200':
+          description: 'Trust score. An address that was never scored returns 0 and lastUpdated 0.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrustScore' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/Internal' }
+        '502': { $ref: '#/components/responses/UpstreamChain' }
+        '503': { $ref: '#/components/responses/NotConfigured' }
+
+  /intent/evaluate:
+    post:
+      tags: [Intent]
+      summary: Evaluate a payment intent with AI consensus
+      description: |
+        Sends the proposed payment (plus both parties' on-chain trust scores) to Kimi, Qwen and Jev in
+        parallel; each returns GO or STOP with a 0-100 confidence. Full design: `docs/ai-consensus-architecture.md`.
+
+        **Only `GO` means proceed.** Treat `STOP`, `REVIEW`, `503` and any error as "do not pay automatically".
+
+        **Consensus.** 2+ GO => `GO`; 2+ STOP => `STOP`; two answers that disagree (the third model
+        failed) => `REVIEW`. At least 2 models must answer, otherwise `503 INSUFFICIENT_AI_MODELS` and no
+        verdict. A `GO` is downgraded to `REVIEW` when the context looks like a prompt injection
+        (`flags` contains `PROMPT_INJECTION_SUSPECTED`).
+
+        **Confidence.** Weighted average (Kimi 50%, Qwen 30%, Jev 20%, renormalised over the models that
+        answered) of the answering models' confidence. It is not the probability the verdict is right;
+        read it with `agreement`.
+
+        **Caching.** Results are cached for 5 minutes by a hash of the intent. Send `fresh: true` to bypass
+        the cache. Each model call has a 10 s timeout and up to 2 retries (1 s, 2 s backoff), so a slow
+        provider can delay a response by up to about 33 s.
+
+        **Rate limit.** In addition to the general limit: 10 requests/hour on the free tier and
+        100/hour on the premium tier, per API key. Requests rejected with 400 are not counted.
+
+        `context` is untrusted text. It is passed to the models as data and the system prompt instructs
+        them to ignore instructions inside it, but it must not be relied on as authorization.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IntentRequest' }
+            example:
+              from: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
+              to: '0x90F79bf6EB2c4f870365E785982E1f101E93b906'
+              amount: '12500000000000000000'
+              token: AUSD
+              context: Paying invoice #42 for 2 hours of GPU compute
+      responses:
+        '200':
+          description: Consensus reached.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IntentResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429':
+          description: General rate limit (`RATE_LIMITED`) or the hourly intent limit (`INTENT_RATE_LIMITED`) exceeded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500': { $ref: '#/components/responses/Internal' }
+        '503':
+          description: Fewer than 2 models answered (`INSUFFICIENT_AI_MODELS`, message "Insufficient AI models available"); `error.details` lists each model's outcome. Treat as STOP.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /agent/{address}/credentials:
+    get:
+      tags: [Agents]
+      summary: List an agent's active credentials
+      description: |
+        Credentials issued **through this API** to the address that are currently valid on-chain
+        (not revoked, not expired), plus the address's trust score (0-100, or `null` if no TrustScore
+        contract is configured). Credentials minted directly on-chain are not included because the
+        registry has no per-holder index.
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Address' }
+      responses:
+        '200':
+          description: Active credentials (possibly empty).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentCredentials' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/Internal' }
+        '502': { $ref: '#/components/responses/UpstreamChain' }
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      security: []
+      responses:
+        '200':
+          description: Server is up.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: healthy }
+                  timestamp: { type: string, format: date-time }
+                  uptime: { type: number, description: Seconds }
+
+components:
+  securitySchemes:
+    ApiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Address:
+      type: string
+      pattern: '^0x[0-9a-fA-F]{40}$'
+      example: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
+    Bytes32:
+      type: string
+      pattern: '^0x[0-9a-fA-F]{64}$'
+      example: '0xbf7f1af706a8c87f53806f4e4f319b672cac6c1edd2e7d6ffa5ee294af4aa132'
+
+    MintRequest:
+      type: object
+      additionalProperties: false
+      required: [issuer, subject, credentialType, metadataUri, expiresAt]
+      properties:
+        issuer:
+          allOf: [{ $ref: '#/components/schemas/Address' }]
+          description: A managed issuer address that is authorized in the CredentialRegistry.
+        subject:
+          allOf: [{ $ref: '#/components/schemas/Address' }]
+          description: Credential holder. Must not be the zero address.
+        credentialType:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Free-text label (hashed with keccak256) or a `0x` bytes32.
+        metadataUri:
+          type: string
+          maxLength: 2048
+          description: Must use the `https://`, `ipfs://` or `ar://` scheme.
+        expiresAt:
+          type: integer
+          minimum: 0
+          maximum: 4102444800
+          description: Unix seconds, at least 60 s in the future. `0` means no expiry.
+    MintResponse:
+      type: object
+      required: [credentialId, txHash, status]
+      properties:
+        credentialId: { $ref: '#/components/schemas/Bytes32' }
+        txHash: { $ref: '#/components/schemas/Bytes32' }
+        status: { type: string, enum: [pending, confirmed] }
+
+    VerifyResponse:
+      type: object
+      required: [valid, isRevoked, expiresAt, metadataUri]
+      properties:
+        valid: { type: boolean }
+        isRevoked: { type: boolean }
+        expiresAt: { type: integer, description: Unix seconds; 0 = no expiry. }
+        metadataUri:
+          type: string
+          nullable: true
+          description: Null if the API has no metadata for this credential (e.g. minted elsewhere) or it does not match the on-chain hash.
+        credentialId: { $ref: '#/components/schemas/Bytes32' }
+        issuer: { $ref: '#/components/schemas/Address' }
+        subject: { $ref: '#/components/schemas/Address' }
+        issuedAt: { type: integer }
+
+    Credential:
+      type: object
+      properties:
+        credentialId: { $ref: '#/components/schemas/Bytes32' }
+        valid: { type: boolean }
+        isRevoked: { type: boolean }
+        issuer: { $ref: '#/components/schemas/Address' }
+        subject: { $ref: '#/components/schemas/Address' }
+        credentialTypeHash: { $ref: '#/components/schemas/Bytes32' }
+        credentialType: { type: string, nullable: true }
+        issuedAt: { type: integer }
+        expiresAt: { type: integer }
+        dataHash: { $ref: '#/components/schemas/Bytes32' }
+        metadataUri: { type: string, nullable: true }
+    AgentCredentials:
+      type: object
+      required: [credentials, trustScore]
+      properties:
+        credentials:
+          type: array
+          items: { $ref: '#/components/schemas/Credential' }
+        trustScore: { type: number, nullable: true, minimum: 0, maximum: 100 }
+
+    TrustFactor:
+      type: object
+      properties:
+        points: { type: number, description: 0-100 }
+        weightBps: { type: integer, description: Factor weight in basis points (weights sum to 10000). }
+    TrustScore:
+      type: object
+      required: [address, score, scoreBps, breakdown, lastUpdated]
+      properties:
+        address: { $ref: '#/components/schemas/Address' }
+        score: { type: number, minimum: 0, maximum: 100 }
+        scoreBps: { type: integer, minimum: 0, maximum: 10000 }
+        breakdown:
+          type: object
+          properties:
+            credentials: { $ref: '#/components/schemas/TrustFactor' }
+            attestations: { $ref: '#/components/schemas/TrustFactor' }
+            staking: { $ref: '#/components/schemas/TrustFactor' }
+        lastUpdated: { type: integer, description: Unix seconds; 0 if never scored. }
+
+    IntentRequest:
+      type: object
+      additionalProperties: false
+      required: [from, to, amount, token, context]
+      properties:
+        from: { $ref: '#/components/schemas/Address' }
+        to: { $ref: '#/components/schemas/Address' }
+        amount: { type: string, pattern: '^\d{1,78}$', description: 'Positive integer in the token''s smallest unit (wei), as a string.', example: '12500000000000000000' }
+        token: { type: string, description: 'Token contract address or ticker symbol.', example: AUSD }
+        context: { type: string, maxLength: 2000, description: Untrusted free text about the purpose of the payment. }
+        fresh: { type: boolean, description: 'Skip the 5-minute result cache and re-ask the models (the new result refreshes the cache).' }
+    ModelResult:
+      oneOf:
+        - type: object
+          required: [model, success, verdict, confidence, reasoning, latencyMs, attempts]
+          properties:
+            model: { type: string, enum: [kimi, qwen, jev] }
+            success: { type: boolean, enum: [true] }
+            verdict: { type: string, enum: [GO, STOP] }
+            confidence: { type: number, minimum: 0, maximum: 100 }
+            reasoning: { type: string, maxLength: 500 }
+            latencyMs: { type: integer, description: Total time across all attempts. }
+            attempts: { type: integer, description: HTTP attempts made; 1 means no retry was needed. }
+        - type: object
+          required: [model, success, error, latencyMs, attempts]
+          properties:
+            model: { type: string, enum: [kimi, qwen, jev] }
+            success: { type: boolean, enum: [false] }
+            error: { type: string, enum: [not_configured, timeout, network_error, rate_limited, upstream_error, invalid_response] }
+            latencyMs: { type: integer }
+            attempts: { type: integer }
+    IntentResponse:
+      type: object
+      required: [verdict, isSafeToProceed, recommendedAction, confidence, agreement, votes, modelResults, intentHash, cached, flags, evaluatedAt]
+      properties:
+        verdict: { type: string, enum: [GO, STOP, REVIEW], description: Only GO means proceed. }
+        isSafeToProceed: { type: boolean, description: 'True only when verdict is GO (after any prompt-injection downgrade). Gate payments on this field alone.' }
+        recommendedAction: { type: string, description: Short human-readable next step. }
+        confidence: { type: number, minimum: 0, maximum: 100, description: Weighted average (Kimi 50, Qwen 30, Jev 20) of the answering models' confidence. }
+        agreement: { type: number, minimum: 0, maximum: 1, description: Share of the answering models' weight on the winning side (heavier side for REVIEW). }
+        votes:
+          type: object
+          properties:
+            GO: { type: integer }
+            STOP: { type: integer }
+        modelResults:
+          type: array
+          items: { $ref: '#/components/schemas/ModelResult' }
+        intentHash: { type: string, description: SHA-256 of the canonical intent; the cache key and audit-log correlation id. }
+        cached: { type: boolean, description: True when served from the 5-minute cache. }
+        flags:
+          type: array
+          items: { type: string, enum: [PROMPT_INJECTION_SUSPECTED] }
+        evaluatedAt: { type: string, format: date-time, description: When the models were actually consulted. }
+
+    Error:
+      type: object
+      required: [error, requestId]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: VALIDATION_ERROR }
+            message: { type: string }
+            details: {}
+        requestId: { type: string, format: uuid }
+
+  responses:
+    BadRequest:
+      description: Invalid path parameter or body (`VALIDATION_ERROR`, `INVALID_JSON`, `INVALID_EXPIRY`, ...). Unknown body fields are rejected.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Missing or invalid API key.
+      headers:
+        WWW-Authenticate: { schema: { type: string } }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RateLimited:
+      description: Rate limit exceeded. See the `RateLimit` response headers.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Internal:
+      description: Unexpected server error. Details are in the server log under the `requestId`.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UpstreamChain:
+      description: The blockchain RPC call failed (`UPSTREAM_CHAIN_ERROR`) or the transaction reverted (`TX_REVERTED`).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotConfigured:
+      description: A contract address is not configured (`NOT_CONFIGURED`).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

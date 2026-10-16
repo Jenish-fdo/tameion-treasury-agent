@@ -1,0 +1,65 @@
+Credentia: a trust layer for verifiable credentials on Monad
+
+Credentia turns credentials into tamper-evident records that anyone can check in seconds. An issuer anchors a fingerprint of a credential on Monad. The holder shares a verification link. A verifier opens it and sees, with no account and no wallet, whether the credential is genuine, whether the details were altered, and whether it is still valid. It answers one question: can this person prove this achievement is real, without asking a verifier to trust a PDF or a screenshot?
+
+THE PROBLEM
+
+Certificates are usually static documents. A PDF can be edited, a screenshot can be faked, and a link can be quietly swapped, so the verifier ends up trusting whoever sent it. Checking a claim properly means emailing a registrar or learning an institution-specific portal, which is slow, inconsistent and expensive. Employers, universities and grant programs receive more claims than they can check, so many are not checked at all. Holders own real achievements but have no portable way to prove them. Institutions carry the cost of answering the same verification requests again and again.
+
+WHAT CREDENTIA DOES
+
+1. Issue. An authorised issuer creates a credential: title, recipient name, recipient address, description and optional expiry. A fingerprint (a hash) of the details is written to the CredentialRegistry on Monad.
+2. Share. The issuer or holder gets a public verification link and a QR code. The link carries the credential details.
+3. Verify. Whoever opens the link sees a clear result. The page reads the registry directly, recomputes the fingerprint from the details in the link and compares it with the on-chain record.
+4. Revoke. If a credential was issued in error or is no longer valid, the issuer revokes it and the verification page shows REVOKED. The verifier never has to contact the issuer.
+5. Track. An Envio indexer turns the registry events into a timeline, so a verifier can see what happened and when.
+
+HOW VERIFICATION WORKS
+
+The verification page does not just show a badge. It spells out four checks: the link was read, the credential exists in the registry, the details in the link match the on-chain fingerprint, and the credential is still active (not revoked, not expired). Each check shows Passed, Failed or Skipped in words, so a verifier can see why a credential got its status. The statuses are VERIFIED, REVOKED, EXPIRED, NOT FOUND, DETAILS DO NOT MATCH and CANNOT CHECK (when the registry cannot be reached).
+
+The tamper check is the heart of the product. Change one detail in a share link, for example the recipient name, and the recomputed fingerprint no longer matches the registry. The page says so plainly: the details do not match what was recorded on Monad, do not rely on them. A PDF cannot do that.
+
+PRIVACY AND SECURITY
+
+Only a fingerprint of the credential is written on-chain, not the details. The readable details (title, recipient name, description) travel in the share link, so the holder decides who receives the link. Because the link carries those details, sensitive personal data should not be put in a credential. Verification needs no wallet and no backend. The browser reads the public registry, recomputes the fingerprint and compares. Contract addresses and network settings in the front end are public values. Private keys and API keys stay on the server and never reach the browser. The credential issuer is authorised by the registry owner and can revoke only its own credentials. The issuer's wallet signs issuance, and the app never holds a key.
+
+BUILT ON MONAD
+
+Credentia runs on Monad Testnet (chain ID 10143). The CredentialRegistry (Solidity 0.8.24, EIP-712 credentials, issuer authorisation, revocation) is at 0x335de4487bfcc2Aa3D0E68ad67759616DFD25113, and the testnet CVI attestation contract is at 0x1C825e31a873e227dE77Ec184fd17C25B36508B0. Issuing and revoking are real transactions you can open in the explorer: issue 0xbc9d9a31...ae6841, issue 0x1d418c64...6174b5, revoke 0x62da602e...3b8ed7. Monad is EVM-compatible, so the contracts are standard Solidity with standard tooling. We have not benchmarked performance, so we make no speed or throughput claims.
+
+ENVIO: THE EVENT TIMELINE
+
+An Envio HyperIndex indexer follows the registry's CredentialIssued and CredentialRevoked events and the attestation events. The verification page uses that index to show a credential timeline ("Issued, then revoked") and a simple issuer reputation figure. In the demo the indexer runs locally in Docker against the deployed contracts. The hosted site verifies straight from the chain and shows the timeline only when an indexer URL is configured.
+
+THE ISSUER GATE (A TESTNET STAND-IN)
+
+Issuance is gated on-chain: the registry refuses issuers that are not attested. The attestation comes from a CVI contract that we operate on testnet, and the gate is labelled TESTNET CVI DEMO GATE, simulated issuer attestation everywhere it appears. It is not a Cleanverse integration, and it is not KYC, legal identity verification or compliance. We built the boundary so a real verifier can replace it.
+
+AI-ASSISTED SUMMARIES
+
+A server-side route calls the KIMI (Moonshot) API to draft credential descriptions and explain a credential in plain English. Output would be labelled AI-ASSISTED, the API key stays on the server, and if the provider is unavailable the page says "AI summary temporarily unavailable. Onchain verification remains available." In our one live test the provider returned HTTP 429, so we have not shown a live AI answer and we do not claim one. Verification never depends on it.
+
+EVIDENCE THAT IT WORKS
+
+The registry and the app are covered by 178 Foundry contract tests and 242 web tests, all passing in local runs. The three transactions above are on Monad Testnet and can be opened in the explorer. The verified, revoked and edited-link results are real reads of the live registry. The flow has also been backtested with five people.
+
+TRY IT (ABOUT 30 SECONDS)
+
+Live site: https://credentia-monad.netlify.app
+- Open the verified credential: it shows VERIFIED with four passing checks.
+- Open the revoked credential: it shows REVOKED.
+- Open the first link with the recipient name edited: it shows DETAILS DO NOT MATCH.
+The exact links are in the project links. All demo data is labelled TESTNET DEMO DATA.
+
+CURRENT LIMITS
+
+Testnet only. The CVI gate is a stand-in. The Envio timeline runs locally in the demo. The Mera passkey sign-in and the KIMI summary have not been demonstrated end to end. A credential's details live in its share link, so the link is as private as its holder keeps it. Only a hash is on-chain.
+
+USE CASES
+
+Universities issuing degrees and honours; bootcamps issuing completion credentials; hackathons issuing participation and prize credentials; employers and recruiters checking a claim before an interview instead of after an offer; certification bodies; and grant or accelerator programs verifying an applicant's achievements. In each case a static claim becomes a record that can be checked instantly and revoked when it should be.
+
+WHERE IT GOES
+
+Credentia begins with academic and professional credentials: degrees, bootcamp completions, hackathon prizes, certifications and skill attestations. The same model extends to any claim that should be checkable without trusting the messenger. The goal is simple: make trust portable, so a holder can prove what they did, an institution can issue with confidence, and a verifier can decide faster.

@@ -1,0 +1,36 @@
+[profile.default]
+src = "src"
+out = "out"
+test = "test"
+script = "script"
+libs = ["lib"]
+
+# Solidity compiler
+# Our contracts use pragma ^0.8.20; OpenZeppelin v5 requires ^0.8.24.
+# auto_detect_solc lets Forge pick 0.8.24 (satisfies both pragmas).
+auto_detect_solc = true
+optimizer = true
+optimizer_runs = 200
+
+# Monad testnet
+chain_id = 10143
+
+# RPC endpoints
+[rpc_endpoints]
+monad_testnet = "${MONAD_TESTNET_RPC}"
+
+# Formatter
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = true
+int_types = "long"
+multiline_func_header = "all"
+quote_style = "double"
+number_underscore = "thousands"
+wrap_comments = true
+
+# Documentation
+[doc]
+out = "docs"
+repository = "https://github.com/credentia/credentia"

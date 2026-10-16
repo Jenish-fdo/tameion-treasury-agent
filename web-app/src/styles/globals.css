@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* THE PAYMENT EVIDENCE FILE: palette ------------------------------------------------------ */
+:root {
+  --paper: #f2ede3;
+  --paper-deep: #e5ddcf;
+  --ink: #101a2b;
+  --ink-soft: #334155;
+  --line: #c8bfaf;
+  --signal: #3f5bff;
+  --signal-soft: #dde2ff;
+  --go: #147d5a;
+  --go-soft: #d8f0e6;
+  --stop: #be3d3d;
+  --stop-soft: #f5deda;
+  --review: #9a6700;
+  --review-soft: #f7edcf;
+  --white: #fffdf8;
+  --sheet-shadow: 6px 6px 0 rgba(16, 26, 43, 0.1);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    @apply font-body antialiased;
+  }
+
+  /* One visible focus style everywhere (cobalt = interactive). */
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+@layer components {
+  .container {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Rectangular controls, never pills. */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded border px-4 py-2.5 font-body text-xs font-bold uppercase tracking-[0.12em] transition-[transform,box-shadow,background-color,border-color,color] duration-200 ease-out active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45 motion-reduce:transition-none;
+  }
+  .btn-primary {
+    @apply btn border-ink bg-ink text-sheet hover:-translate-y-0.5 hover:bg-ink-soft hover:shadow-[3px_3px_0_rgba(63,91,255,0.35)] motion-reduce:hover:translate-y-0;
+  }
+  .btn-secondary {
+    @apply btn border-line bg-sheet text-ink hover:-translate-y-0.5 hover:border-ink hover:shadow-[3px_3px_0_rgba(16,26,43,0.10)] motion-reduce:hover:translate-y-0;
+  }
+  /* Outlined cobalt: the "open payment check" action. Text stays ink for contrast. */
+  .btn-signal {
+    @apply btn border-signal border-[1.5px] bg-transparent text-ink hover:bg-signal hover:text-sheet;
+  }
+
+  .card {
+    @apply rounded-md border border-line bg-sheet p-6;
+    box-shadow: var(--sheet-shadow);
+  }
+
+  .input {
+    @apply flex h-10 w-full rounded border border-line bg-sheet px-3 py-2 text-sm text-ink placeholder:text-ink-soft/60 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Small uppercase mono tags. */
+  .evidence-tag {
+    @apply inline-flex items-center gap-1.5 rounded-[3px] border px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink;
+  }
+}

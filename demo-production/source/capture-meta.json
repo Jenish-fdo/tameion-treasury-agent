@@ -1,0 +1,66 @@
+{
+ "home": {
+  "frames": 216,
+  "homeEnd": 2174
+ },
+ "v1": {
+  "dialogRects": {
+   "dialog": {
+    "x": 720,
+    "y": 380.25,
+    "w": 480,
+    "h": 319.5
+   }
+  },
+  "banner": {
+   "x": 608,
+   "y": 215.5,
+   "w": 704,
+   "h": 88.5
+  },
+  "checks": {
+   "x": 608,
+   "y": 328,
+   "w": 704,
+   "h": 329.5
+  },
+  "frames": 120
+ },
+ "tamper": {
+  "banner": {
+   "x": 608,
+   "y": 215.5,
+   "w": 704,
+   "h": 88.5
+  },
+  "checks": {
+   "x": 608,
+   "y": 328,
+   "w": 704,
+   "h": 329.5
+  },
+  "frames": 84
+ },
+ "v2": {
+  "banner": {
+   "x": 608,
+   "y": 215.5,
+   "w": 704,
+   "h": 88.5
+  },
+  "checks": {
+   "x": 608,
+   "y": 328,
+   "w": 704,
+   "h": 329.5
+  },
+  "frames": 96
+ },
+ "local": {
+  "frames": 108,
+  "activityY": {
+   "y": 1040.5
+  },
+  "text": "Skip to main content\nCREDENTIA\nMONAD TESTNET\nIssue\nMy credentials\nPayment check\nISSUE CREDENTIAL\n\nVERIFICATION\n\nCredential check\nREVOKED\n\nThe issuer has revoked this credential.\n\nWHAT WAS CHECKED\nLink readPASSED\nCredential details found in the link.\nRegistry checkedPASSED\nRecord found on Monad.\nDetails matchPASSED\nLink details match the on-chain fingerprint.\nStill activeFAILED\nRevoked by the issuer.\nWHO ISSUED THIS\n\n0xf6fb6B5763c0988249E6E8061092e0506F8A3934\n\nCLEANVERSE IDENTITY (TESTNET STAND-IN)\nCVI VERIFIED\nTESTNET STAND-IN\n\nThis wallet holds a Cleanverse Verified Identity testnet demo stand-in attested on Monad. Tier 1.\n\nON-CHAIN RECORD\nINDEXED BY ENVIO HYPERINDEX\nCREDENTIAL STATUS\nREVOKED\nVERIFICATIONS RECORDED\n0\nISSUER REPUTATION\n12 / 100\nHow the reputation score is worked out\nRECENT ACTIVITY\nRevoked\n0xf6fb...3934 · 2026-10-13 09:01 UTCtx\n(opens the Monad explorer in a new tab)\nIssued\n0xf6fb...3934 · 2026-10-13 09:00 UTCtx\n(opens the Monad explorer in a new tab)\n\nCREDENTIA / MONAD TESTNET\n\nREVOKED\n\nCREDENTIAL\n\nMONAD WORKSHOP ATTENDANCE CREDENTIAL (SAMPLE)\nRECIPIENT\nAarav N.\nISSUER\n0xf6fb...3934\nISSUED\n2026-10-13 09:00 UTC\nEXPIRES\nNo expiry\nCREDENTIAL ID\n0x453efe…3bfe62\nTRANSACTION\n0x1d418c…6174b5\nVERIFY ON MONAD\n(OPENS THE MONAD EXPLORER IN A NEW TAB)\nCOPY LINK\nVIEW RECEIPT\nKEEP A RECEIPT\n\nOptional. Record that you checked this credential, and what the registry said, as a transaction from your passkey account.\n\nSIGN IN TO RECORD\nASK ABOUT THIS CREDENTIAL\nKIMI · AI-ASSISTED\nASK\nSUMMARIZE THIS CREDENTIAL\nIs this credential authentic?\nWho issued this, and are they verifi"
+ }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "@credentia/contracts",
+  "version": "0.1.0",
+  "description": "Credentia smart contracts for Monad",
+  "private": true,
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test -vvv",
+    "test:gas": "forge test --gas-report",
+    "test:coverage": "forge coverage",
+    "deploy:testnet": "forge script script/Deploy.s.sol:DeployScript --rpc-url monad_testnet --broadcast --verify",
+    "deploy:local": "forge script script/Deploy.s.sol:DeployScript --rpc-url http://localhost:8545 --broadcast",
+    "verify": "forge verify-contract",
+    "format": "forge fmt",
+    "format:check": "forge fmt --check",
+    "lint": "solhint 'src/**/*.sol' 'script/**/*.sol' 'test/**/*.sol'",
+    "clean": "forge clean && rm -rf cache out",
+    "install": "forge install",
+    "update": "forge update",
+    "snapshot": "forge snapshot",
+    "typechain": "typechain --target ethers-v6 --out-dir typechain 'out/**/*.json'"
+  },
+  "devDependencies": {
+    "@typechain/ethers-v6": "^0.5.1",
+    "solhint": "^5.0.1",
+    "typechain": "^8.3.2"
+  },
+  "keywords": [
+    "solidity",
+    "foundry",
+    "smart-contracts",
+    "monad",
+    "identity",
+    "attestations"
+  ]
+}

@@ -1,0 +1,21 @@
+# Netlify settings for the Credentia web app (Next.js 14, in the web-app/ folder of a pnpm workspace).
+# Nothing here contains a secret. Set environment variables in the Netlify UI (see docs/hosting.md).
+[build]
+  base = "web-app"
+  # The lockfile lives at the repo root, so install from there (only the web app and what it needs), then build.
+  command = "cd .. && pnpm install --frozen-lockfile --filter @credentia/web-app... && cd web-app && pnpm build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  PNPM_VERSION = "9.5.0"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Netlify's Next.js runtime is detected automatically for Next.js sites; no plugin line is needed.
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"

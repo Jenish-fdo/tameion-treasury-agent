@@ -1,0 +1,155 @@
+1
+00:00:00,600 --> 00:00:04,301
+This is Credentia, running live on Monad testnet.
+
+2
+00:00:04,301 --> 00:00:09,816
+An issuer creates a credential, and anyone can verify it from a link, with nothing to install
+
+3
+00:00:09,816 --> 00:00:10,910
+and no account.
+
+4
+00:00:11,640 --> 00:00:13,311
+The site walks you through it.
+
+5
+00:00:13,311 --> 00:00:16,526
+Issue a credential, share the link or the QR code,
+
+6
+00:00:16,526 --> 00:00:18,650
+and anyone can check it instantly.
+
+7
+00:00:19,380 --> 00:00:20,913
+Issuing starts here.
+
+8
+00:00:20,913 --> 00:00:25,165
+The form asks for a title, a recipient, their wallet address,
+
+9
+00:00:25,165 --> 00:00:26,851
+and an optional expiry.
+
+10
+00:00:26,851 --> 00:00:28,910
+It checks each field as you go,
+
+11
+00:00:28,910 --> 00:00:31,570
+so a malformed address is caught straight away.
+
+12
+00:00:32,300 --> 00:00:34,571
+Issuing is for authorised issuers.
+
+13
+00:00:34,571 --> 00:00:39,454
+The page asks them to sign in with a passkey, and the registry only accepts issuers
+
+14
+00:00:39,454 --> 00:00:41,667
+that pass our testnet identity gate.
+
+15
+00:00:41,667 --> 00:00:44,346
+That gate is a stand-in for a real verifier,
+
+16
+00:00:44,346 --> 00:00:45,750
+and the page says so.
+
+17
+00:00:46,480 --> 00:00:48,193
+Now the verifier's side.
+
+18
+00:00:48,193 --> 00:00:51,743
+This is a real credential, issued on Monad testnet.
+
+19
+00:00:51,743 --> 00:00:54,641
+Opening its link reads the registry directly.
+
+20
+00:00:54,641 --> 00:00:56,410
+No account, no wallet.
+
+21
+00:00:57,140 --> 00:00:59,044
+The page shows four checks.
+
+22
+00:00:59,044 --> 00:01:05,082
+The link was read, the credential exists in the registry, the details match the on-chain fingerprint,
+
+23
+00:01:05,082 --> 00:01:06,280
+and it's still active.
+
+24
+00:01:07,010 --> 00:01:12,226
+It shows who issued it, and the verify button opens the transaction on the Monad explorer,
+
+25
+00:01:12,226 --> 00:01:14,840
+so anyone can confirm it independently.
+
+26
+00:01:15,570 --> 00:01:22,043
+Every credential also has a receipt: its status, ID, issuer, the transaction hash,
+
+27
+00:01:22,043 --> 00:01:23,090
+and the network.
+
+28
+00:01:23,820 --> 00:01:27,920
+Now change one detail in the link, here, the recipient name.
+
+29
+00:01:29,800 --> 00:01:31,872
+The fingerprint no longer matches,
+
+30
+00:01:31,872 --> 00:01:35,100
+and Credentia tells the verifier not to rely on it.
+
+31
+00:01:36,180 --> 00:01:38,523
+And when an issuer withdraws a credential,
+
+32
+00:01:38,523 --> 00:01:40,030
+the page says revoked.
+
+33
+00:01:40,760 --> 00:01:43,567
+In our local setup, an Envio indexer turns
+
+34
+00:01:43,567 --> 00:01:46,219
+the registry's events into a timeline.
+
+35
+00:01:46,219 --> 00:01:48,900
+The credential was issued, then revoked.
+
+36
+00:01:49,630 --> 00:01:51,350
+That's Credentia.
+
+37
+00:01:51,350 --> 00:01:55,832
+A credential anyone can verify, and nobody can quietly edit.
+
+38
+00:01:55,832 --> 00:01:57,857
+Live on Monad testnet today,
+
+39
+00:01:57,857 --> 00:01:59,920
+with the demo data labelled as such.

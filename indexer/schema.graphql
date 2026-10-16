@@ -1,0 +1,40 @@
+# One row per credential, kept current as events arrive. Powers real-time status.
+type Credential {
+  id: ID! # credential ID (bytes32), lowercase
+  issuer: String! @index
+  holder: String! @index
+  credentialType: String!
+  issuedAt: Int!
+  expiryTimestamp: BigInt! # 0 = no expiry
+  revoked: Boolean!
+  revokedAt: Int
+  highAssurance: Boolean! # issued through the path that also requires a CVI-verified holder
+  checkCount: Int! # on-chain verification receipts
+  lastCheckedAt: Int
+  txHash: String!
+}
+
+# One row per issuer wallet. Powers the issuer record and reputation score.
+type Issuer {
+  id: ID! # wallet address, lowercase
+  authorized: Boolean!
+  issued: Int!
+  revoked: Int!
+  checks: Int! # verification receipts across everything this issuer issued
+  cviVerified: Boolean! # holds an attested, unrevoked CVI testnet demo stand-in (expiry is in cviExpiresAt)
+  cviTier: Int!
+  cviExpiresAt: Int! # 0 = no expiry
+  score: Int! # 0-100 activity signal; same formula as web-app/src/lib/dc/reputation.ts
+}
+
+# Append-only event feed. Powers verification history and recent activity.
+type Activity {
+  id: ID! # chainId_block_logIndex
+  kind: String! @index # ISSUED | CHECKED | REVOKED | CVI_ATTESTED | CVI_REVOKED
+  credential: String @index # credential ID, when the event concerns one
+  issuer: String @index # issuer the event counts towards
+  actor: String! # who caused it: issuer, verifier, revoker or attester
+  valid: Boolean # CHECKED only: what the registry said at that block
+  timestamp: Int! @index
+  txHash: String!
+}

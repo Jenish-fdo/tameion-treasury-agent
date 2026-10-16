@@ -1,0 +1,22 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+coverage/
+.DS_Store
+*.log
+
+# Build output and generated files
+.next/
+.netlify/
+out/
+cache/
+*.tsbuildinfo
+next-env.d.ts
+*.recovery.lock
+data/
+.vscode/
+.idea/
+*.pem
