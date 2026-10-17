@@ -26,9 +26,9 @@ Rehearsed locally on 2026-10-17, not on Arc: the whole sequence below (throwaway
 ## 1. Decisions I need from you first
 
 1. **Deployer key.** `~/.foundry/keystores` already holds `credentia-deployer` and `swiftpay-deployer` (names only; I have not opened them). I recommend a **new** keystore, `arc-testnet-deployer`, used for nothing else. The contracts have no owner or admin, so after deployment this key has no power at all; the only thing it can lose is testnet gas money.
-2. **Download of Arc Foundry** (`arc-forge`, `arc-anvil`, `arc-cast`) from the `circlefin/arc-foundry` GitHub releases. It is not installed here. I will not download it without your yes, and the docs publish no checksums, so you may want to check the release page yourself.
+2. **Download of Arc Foundry** (`arc-forge`, `arc-anvil`, `arc-cast`) from the `circlefin/arc-foundry` GitHub releases. It is not installed here. I will not download it without your yes. The project's README says each archive ships with a matching `.sha256` file and tells you to verify it before extracting (step A3). The latest release on the page was `v0.8.0-2` (tag signed by one maintainer and shown as "Verified" by GitHub); the page did not show the asset list or any build attestation, and the README does not name the upstream Foundry version it forks. A checksum from the same page proves the file was not corrupted, not who built it.
 3. **Demo owner and relayer for the backend** (Phase E): a separate funded testnet key for the managed demo owner, and one for the relayer. You create and fund them; I never see them.
-4. **Pin the compiler** in `contracts/foundry.toml` (`solc_version = "0.8.28"`, `evm_version = "prague"`) so a toolchain update cannot change the deployed bytecode. Proposed, not applied.
+4. **Pin the compiler** in `contracts/foundry.toml` (`solc_version = "0.8.28"`, `evm_version = "prague"`) so a toolchain update cannot change the deployed bytecode. Proposed, not applied. Per the Arc Foundry README, `evm_version` only tells the compiler which instruction set to emit (keep it at or below Arc's level, which Prague is) and does **not** choose the rules tests run under; `--network arc` does. **Do not add a `hardfork = ...` key**: the README warns a pinned hardfork overrides fork detection, so a stale pin silently runs old rules.
 5. **Review.** Strongly recommended before deploying anywhere public: a second pair of eyes on `MandateRegistry.sol` and `DecisionLog.sol`, and a static-analysis pass (Slither or Aderyn, not installed here).
 
 ## 2. Phase A: preparation (no network)
@@ -40,19 +40,22 @@ Rehearsed locally on 2026-10-17, not on Arc: the whole sequence below (throwaway
   cd ../web-app && ./node_modules/.bin/jest       # 252 passed
   ```
 - [ ] **A2. Pin the compiler** (decision 4), rebuild, re-run A1. Note the commit hash: it goes into the deployment record.
-- [ ] **A3. Install Arc Foundry** (after your yes). From the docs: download the archive for your platform (macOS Apple Silicon is supported) from the `circlefin/arc-foundry` releases, then:
+- [ ] **A3. Install Arc Foundry** (after your yes). This machine is Apple Silicon (arm64), which has a prebuilt binary. Download into a **new, empty folder** (not the repo, not `~/.local/bin`) both the archive and its `.sha256` file from the `circlefin/arc-foundry` release, then verify **before** extracting:
   ```bash
+  cd "$(mktemp -d)"                       # a fresh folder just for this download
+  # download arc-foundry-<version>-<target>.tar.gz and arc-foundry-<version>-<target>.tar.gz.sha256 here
+  shasum -a 256 -c arc-foundry-<version>-<target>.tar.gz.sha256      # must print "OK"; stop if it does not
   tar -xzf arc-foundry-<version>-<target>.tar.gz
   mkdir -p ~/.local/bin
   mv forge ~/.local/bin/arc-forge && mv cast ~/.local/bin/arc-cast && mv anvil ~/.local/bin/arc-anvil
-  arc-forge --version
+  arc-forge --version && arc-anvil --version && arc-cast --version
   ```
-  The binaries are renamed `arc-*`, so they do not replace your upstream `forge`.
+  The binaries are renamed `arc-*`, so they do not replace your upstream `forge`. Arc Foundry is **not** installable through `foundryup`. Do not run the extracted binaries from inside the downloaded folder. If `~/.local/bin` is not on your `PATH`, add `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshrc` yourself; nothing edits it for you. Arc Foundry ships `forge`, `cast`, `anvil` and `chisel`; `chisel` does not work on Arc and is not needed.
 - [ ] **A4. Re-test under Arc's runtime.** Upstream `anvil` cannot reproduce Arc. In `contracts/`:
   ```bash
   arc-forge test --network arc          # expect 174 passed, the same as upstream
   ```
-  If anything differs, stop and find out why before going on. What to watch, and the tests that exercise it:
+  If anything differs, stop and find out why before going on. Two README warnings apply: the local node differs from a real Arc node in block production, finality and hardfork activation (only forking a live network exercises hardfork boundaries), and `--gas-limit` / `--disable-block-gas-limit` are rejected (we use neither). What to watch, and the tests that exercise it:
 
   | Arc difference | Our code it touches | Tests |
   |---|---|---|
@@ -71,14 +74,14 @@ Rehearsed locally on 2026-10-17, not on Arc: the whole sequence below (throwaway
   ./node_modules/.bin/tsx --test test/e2e/*.e2e.ts        # expect 36 pass
   kill $ANVIL_PID; cp /tmp/env.local.bak .env.local
   ```
-  Kill by the saved PID only, never by name. Pass criterion: 36 of 36.
+  Kill by the saved PID only, never by name. Pass criterion: 36 of 36. The node's pre-funded accounts come from a public test mnemonic: they must never hold real funds.
 - [ ] **A6. Dry run against the live chain** (read-only; `--broadcast` is absent). This is the first time the real RPC's fee and gas numbers are seen:
   ```bash
   cd contracts
   export ARC_TESTNET_RPC=https://rpc.testnet.arc.io      # the `arc_testnet` alias in foundry.toml reads this
   arc-forge script script/DeployTreasury.s.sol:DeployTreasury \
     --rpc-url arc_testnet --account arc-testnet-deployer --sender <DEPLOYER_ADDRESS> \
-    --with-gas-price 40gwei --priority-gas-price 1gwei
+    --network arc --with-gas-price 40gwei --priority-gas-price 1gwei
   ```
   Expected: "Script ran successfully", the two predicted addresses, an estimated total near 6.5M gas and "Estimated amount required" near 0.26 USDC. **The nonce must not change** (`arc-cast nonce <DEPLOYER_ADDRESS> --rpc-url $ARC_TESTNET_RPC`, before and after).
 
@@ -104,9 +107,11 @@ cd contracts
 export ARC_TESTNET_RPC=https://rpc.testnet.arc.io
 arc-forge script script/DeployTreasury.s.sol:DeployTreasury \
   --rpc-url arc_testnet --account arc-testnet-deployer --sender <DEPLOYER_ADDRESS> \
-  --with-gas-price 40gwei --priority-gas-price 1gwei \
+  --network arc --with-gas-price 40gwei --priority-gas-price 1gwei \
   --broadcast --slow
 ```
+
+`--network arc` makes `forge script` simulate under Arc's rules (it is also auto-selected when the RPC's chain ID is recognised, but the checklist asks for it explicitly). It is an Arc Foundry flag: it was **not** part of the local rehearsal, which used upstream `forge`, so confirm `arc-forge script --help` lists it before the first run.
 
 Why the fee flags: `--with-gas-price` is the **max** fee per gas for EIP-1559 transactions, and you pay only base fee plus tip, so a 40 gwei ceiling costs nothing extra. Without it, upstream Foundry estimated about 2 gwei on a local node; if it did the same on Arc, the transactions would be dropped silently at the 20 gwei floor.
 
@@ -146,7 +151,7 @@ Flags are written inline on purpose: your shell is zsh, which does not split an 
   MANDATE_REGISTRY=<MANDATE_REGISTRY> DECISION_LOG=<DECISION_LOG> \
   arc-forge script script/SmokeTestTreasury.s.sol:SmokeTestTreasury \
     --rpc-url arc_testnet --account arc-testnet-deployer --sender <DEPLOYER_ADDRESS> \
-    --with-gas-price 40gwei --priority-gas-price 1gwei --broadcast --slow
+    --network arc --with-gas-price 40gwei --priority-gas-price 1gwei --broadcast --slow
   ```
   It registers a business, grants a mandate to an agent address nobody holds a key for, records one decision, and revokes the mandate. Then confirm, read-only, with the three ids it prints:
   ```bash
