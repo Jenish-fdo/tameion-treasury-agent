@@ -23,10 +23,18 @@ for (const key of config.chain.issuerKeys) {
   const account = privateKeyToAccount(key);
   issuerAccounts.set(account.address.toLowerCase(), account);
 }
+const ownerAccounts = new Map<string, PrivateKeyAccount>();
+for (const key of config.chain.ownerKeys) {
+  const account = privateKeyToAccount(key);
+  ownerAccounts.set(account.address.toLowerCase(), account);
+}
 const relayerAccount = config.chain.relayerKey ? privateKeyToAccount(config.chain.relayerKey) : undefined;
 
 export const getIssuerAccount = (issuer: Address): PrivateKeyAccount | undefined => issuerAccounts.get(issuer.toLowerCase());
 export const getRelayerAccount = (): PrivateKeyAccount | undefined => relayerAccount;
+/** The managed (testnet demo) business-owner account for `owner`, if the API holds its key. */
+export const getOwnerAccount = (owner: Address): PrivateKeyAccount | undefined => ownerAccounts.get(owner.toLowerCase());
+export const managedOwners = (): Address[] => [...ownerAccounts.values()].map((a) => a.address);
 export const managedIssuers = (): Address[] => [...issuerAccounts.values()].map((a) => a.address);
 
 export const getWalletClient = (account: PrivateKeyAccount) => createWalletClient({ account, chain, transport });
@@ -36,6 +44,16 @@ export const requireRegistry = (): Address => {
     throw new AppError('CredentialRegistry address is not configured', 503, 'NOT_CONFIGURED');
   }
   return config.chain.credentialRegistry;
+};
+
+export const requireMandateRegistry = (): Address => {
+  if (!config.chain.mandateRegistry) throw new AppError('MandateRegistry address is not configured', 503, 'NOT_CONFIGURED');
+  return config.chain.mandateRegistry;
+};
+
+export const requireDecisionLog = (): Address => {
+  if (!config.chain.decisionLog) throw new AppError('DecisionLog address is not configured', 503, 'NOT_CONFIGURED');
+  return config.chain.decisionLog;
 };
 
 /** Name of the custom error a contract call reverted with, if any. */

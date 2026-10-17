@@ -25,6 +25,7 @@ security:
 tags:
   - name: Credentials
   - name: Intent
+  - name: Treasury
 
 paths:
   /credential/mint:
@@ -166,6 +167,108 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
+  /businesses/owners:
+    get:
+      tags: [Treasury]
+      summary: Managed demo business owners (testnet only)
+      description: Addresses the API holds keys for. Never returns key material. **Arc testnet demo; unaudited.**
+      responses:
+        '200': { description: Owner addresses }
+  /businesses:
+    post:
+      tags: [Treasury]
+      summary: Register a business and authorise the relayer as a recorder
+      description: |
+        Registers a business with a managed demo owner on the MandateRegistry and lets the API's relayer record decisions for it.
+        `salt` and `metadata` are 0x-prefixed 32-byte hex or free text (hashed). Returns 403 `OWNER_NOT_MANAGED` for any other owner.
+      responses:
+        '201': { description: Registered and confirmed }
+        '202': { description: Submitted; confirmation pending }
+        '403': { description: The API holds no key for this owner }
+  /businesses/{businessId}:
+    get:
+      tags: [Treasury]
+      summary: A business, its owner, and whether the relayer may record for it
+      responses:
+        '200': { description: The business }
+        '404': { description: No such business }
+  /mandates:
+    post:
+      tags: [Treasury]
+      summary: Create a mandate for one AI agent
+      description: |
+        The business owner (a managed demo owner) grants `agent` a scoped, expiring, revocable mandate. Amounts are decimal strings in
+        **USDC base units (6 decimals)**. `categories` are names from PAYROLL, VENDOR_INVOICE, TAX, SUBSCRIPTION, UTILITIES, RENT,
+        CONTRACTOR, REFUND, OTHER. `maxRiskTier` is 0 to 2. `approvalThreshold`: payments at or above it need a human approval signature
+        ("0" = every payment). `recipients` is the allowlist (deny by default). Limits must satisfy perTxLimit <= dailyCap <= weeklyCap <= monthlyCap.
+        Spend windows are fixed day / 7-day / 30-day buckets, so worst case across a boundary is 2x a cap.
+      responses:
+        '201': { description: Created }
+        '400': { description: Invalid input or rejected by the contract (see error.code) }
+        '403': { description: The API holds no key for the business owner }
+        '404': { description: Unknown business }
+    get:
+      tags: [Treasury]
+      summary: List mandates by `businessId` or by `agent` (exactly one), paged
+      responses:
+        '200': { description: A page of mandates, newest last }
+  /mandates/{mandateId}:
+    get:
+      tags: [Treasury]
+      summary: One mandate with status, current-window spend and allowlist
+      description: '`effectiveStatus` reads EXPIRED once the expiry has passed even if no transaction has recorded it.'
+      responses:
+        '200': { description: The mandate }
+        '404': { description: No such mandate }
+  /mandates/{mandateId}/revoke:
+    post:
+      tags: [Treasury]
+      summary: Revoke a mandate immediately
+      responses:
+        '200': { description: The revoked mandate }
+        '409': { description: Not active (already revoked, consumed or expired) }
+  /mandates/{mandateId}/validate:
+    post:
+      tags: [Treasury]
+      summary: Read-only check of a proposed payment against a mandate
+      description: |
+        Calls the contract's `validate`. Nothing is spent or written. `reason` is one of NONE, UNKNOWN_MANDATE, REVOKED, CONSUMED, EXPIRED,
+        WRONG_AGENT, ZERO_AMOUNT, CATEGORY_NOT_ALLOWED, RECIPIENT_NOT_ALLOWED, RISK_TIER_TOO_HIGH, OVER_PER_TX_LIMIT, OVER_DAILY_CAP,
+        OVER_WEEKLY_CAP, OVER_MONTHLY_CAP, PAYMENT_ALREADY_USED. `needsApproval` means a human approval signature is required to consume.
+        A refusal is a normal 200 answer, not an error.
+      responses:
+        '200': { description: The verdict }
+  /decisions:
+    post:
+      tags: [Treasury]
+      summary: Append a decision record through the relayer
+      description: |
+        Writes to the append-only DecisionLog. `rationaleHash` is a hash only (plain text is rejected: the rationale stays off-chain).
+        `executed` needs `txHash`; `escalated` needs `approvalRef`; `clientRef` makes a retry idempotent (409 `DUPLICATE_CLIENT_REF`).
+        The log proves who wrote what and when; it does not prove a transfer happened.
+      responses:
+        '201': { description: Recorded; the record is returned with `hashVerified` }
+        '400': { description: Rejected by the contract's rules }
+        '403': { description: The relayer is not an authorised recorder for this business }
+    get:
+      tags: [Treasury]
+      summary: List decisions by `businessId`, `agentId` or `mandateId` (exactly one), paged
+      responses:
+        '200': { description: A page of records; `linked` is true when a business list's hash chain holds }
+  /decisions/{decisionId}:
+    get:
+      tags: [Treasury]
+      summary: One record, with its hash recomputed
+      responses:
+        '200': { description: The record }
+        '404': { description: No such decision }
+  /approvals/pending:
+    get:
+      tags: [Treasury]
+      summary: Escalations waiting for a human
+      description: ESCALATED records with no follow-up record, among the newest 200 of the business. Approving is not built yet.
+      responses:
+        '200': { description: Pending escalations, newest first }
   /health:
     get:
       tags: [Health]

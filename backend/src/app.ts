@@ -9,6 +9,7 @@ import { apiRateLimiter, authFailureLimiter } from './middleware/rateLimit.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import healthRoutes from './routes/health.routes.js';
 import intentRoutes from './routes/intent.js';
+import treasuryRoutes from './routes/treasury.routes.js';
 import v1Routes from './routes/v1.routes.js';
 
 export const API_PREFIX = '/api/v1';
@@ -32,6 +33,7 @@ export function createApp(): Express {
   // Everything below requires an API key and is rate limited per key.
   app.use(API_PREFIX, authFailureLimiter, apiKeyAuth, apiRateLimiter);
   app.use(`${API_PREFIX}/intent`, intentRoutes);
+  app.use(API_PREFIX, treasuryRoutes);
   app.use(API_PREFIX, v1Routes);
 
   app.use(notFoundHandler);

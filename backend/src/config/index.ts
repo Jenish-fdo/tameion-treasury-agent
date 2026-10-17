@@ -46,10 +46,16 @@ const envSchema = z.object({
   ARC_CHAIN_ID: z.coerce.number().int().positive().optional(),
   ARC_EXPLORER_URL: z.string().url().optional(),
   CREDENTIAL_REGISTRY_ADDRESS: optionalAddress,
+  // Phase 3: mandates and the decision log. Deployed addresses; unset = the /mandates and /decisions routes answer 503.
+  MANDATE_REGISTRY_ADDRESS: optionalAddress,
+  DECISION_LOG_ADDRESS: optionalAddress,
   // Pays gas for issueCredentialWithSig. Falls back to the issuer key when unset.
   BACKEND_WALLET_PRIVATE_KEY: z.string().optional(),
   // Comma-separated private keys the API may sign credentials with (one per managed issuer).
   ISSUER_PRIVATE_KEYS: z.string().default(''),
+  // TESTNET DEMO ONLY: comma-separated private keys of business owners the API may act for (create/revoke mandates).
+  // Real owners will sign in their own Circle wallet. Never commit these; they come from the runtime environment.
+  BUSINESS_OWNER_PRIVATE_KEYS: z.string().default(''),
   TX_CONFIRM_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
 
   // Storage for off-chain credential metadata (the contract only stores a hash)
@@ -91,6 +97,12 @@ if (env.BACKEND_WALLET_PRIVATE_KEY && !privateKey.safeParse(env.BACKEND_WALLET_P
   throw new Error('BACKEND_WALLET_PRIVATE_KEY is not a valid private key (value not shown)');
 }
 
+const ownerKeys = csv(env.BUSINESS_OWNER_PRIVATE_KEYS);
+for (const k of ownerKeys) {
+  const r = privateKey.safeParse(k);
+  if (!r.success) throw new Error('BUSINESS_OWNER_PRIVATE_KEYS contains an invalid private key (value not shown)');
+}
+
 const MIN_KEY_LENGTH = 24;
 const apiKeys = csv(env.API_KEYS);
 const proKeys = csv(env.PRO_API_KEYS);
@@ -128,8 +140,11 @@ export const config = {
     chainId: env.ARC_CHAIN_ID ?? ARC_NETWORKS[env.ARC_NETWORK].chainId,
     explorerUrl: env.ARC_EXPLORER_URL ?? ARC_NETWORKS[env.ARC_NETWORK].explorerUrl,
     credentialRegistry: env.CREDENTIAL_REGISTRY_ADDRESS as `0x${string}` | undefined,
+    mandateRegistry: env.MANDATE_REGISTRY_ADDRESS as `0x${string}` | undefined,
+    decisionLog: env.DECISION_LOG_ADDRESS as `0x${string}` | undefined,
     relayerKey: env.BACKEND_WALLET_PRIVATE_KEY as `0x${string}` | undefined,
     issuerKeys: issuerKeys as `0x${string}`[],
+    ownerKeys: ownerKeys as `0x${string}`[],
     txConfirmTimeoutMs: env.TX_CONFIRM_TIMEOUT_MS,
   },
   dataDir: env.DATA_DIR,
