@@ -14,4 +14,3 @@ ignore:
   - "test"
   - "contracts/mocks"
   - "contracts/vendor"
-  - "contracts-exposed"
