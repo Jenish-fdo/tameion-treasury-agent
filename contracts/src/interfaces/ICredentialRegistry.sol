@@ -40,6 +40,9 @@ interface ICredentialRegistry {
     /// @param newDomainSeparator The new domain separator value
     event DomainSeparatorUpdated(bytes32 newDomainSeparator);
 
+    /// @notice Emitted when a signer cancels (or uses) a nonce
+    event NonceCancelled(address indexed signer, uint256 nonce);
+
     /// @notice Emitted when someone records a verification of a credential on-chain
     /// @param id The credential that was checked
     /// @param verifier The account that recorded the check
@@ -145,6 +148,9 @@ interface ICredentialRegistry {
      * @return domainSeparator The domain separator hash
      */
     function getDomainSeparator() external view returns (bytes32);
+
+    /// @notice Cancel one of the caller's signing nonces so a signed-but-unsubmitted request can no longer be used
+    function cancelNonce(uint256 nonce) external;
 
     // ─── Verification receipts ──────────────────────────────────────
 

@@ -4,7 +4,7 @@ import { parseAbi } from 'viem';
 export const credentialRegistryAbi = parseAbi([
   'struct Credential { address issuer; address holder; bytes32 credentialType; bytes32 dataHash; uint64 issuedAt; uint64 expiryTimestamp; bool revoked; }',
   'struct CredentialRequest { address holder; bytes32 credentialType; bytes32 dataHash; uint256 expiryTimestamp; uint256 nonce; uint256 deadline; }',
-  'function nonces(address owner) view returns (uint256)',
+  'function nonceUsed(address signer, uint256 nonce) view returns (bool)',
   'function eip712Domain() view returns (bytes1 fields, string name, string version, uint256 chainId, address verifyingContract, bytes32 salt, uint256[] extensions)',
   'function isAuthorizedIssuer(address issuer) view returns (bool)',
   'function verifyCredential(bytes32 id) view returns (bool valid)',

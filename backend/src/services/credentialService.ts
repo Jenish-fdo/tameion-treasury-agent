@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { encodePacked, isAddressEqual, keccak256, toBytes, zeroAddress, type Address, type Hex } from 'viem';
 import { CREDENTIAL_REQUEST_TYPES, credentialRegistryAbi } from '../chain/abis.js';
 import {
@@ -13,8 +14,7 @@ import { logger } from '../utils/logger.js';
 const SIGNATURE_VALIDITY_SECONDS = 600;
 const MIN_EXPIRY_LEAD_SECONDS = 60;
 
-// The registry nonce is per holder and read-then-used, and the relayer's tx nonce must also be
-// sequential, so mints are serialised within this process.
+// The relayer's own transaction nonce must be sequential, so mints are serialised within this process.
 const mintLock = new Mutex();
 
 export interface MintResult { credentialId: Hex; txHash: Hex; status: 'pending' | 'confirmed' }
@@ -99,10 +99,9 @@ export class CredentialService {
       }
 
       const txHash = await mintLock.run(async () => {
-        const [nonce, domain] = await Promise.all([
-          publicClient.readContract({ address: registry, abi: credentialRegistryAbi, functionName: 'nonces', args: [body.subject] }),
-          publicClient.readContract({ address: registry, abi: credentialRegistryAbi, functionName: 'eip712Domain' }),
-        ]);
+        // Nonces are per signer and unordered (security review M-1): a fresh random 256-bit value is unique with overwhelming probability.
+        const nonce = BigInt(`0x${randomBytes(32).toString('hex')}`);
+        const domain = await publicClient.readContract({ address: registry, abi: credentialRegistryAbi, functionName: 'eip712Domain' });
         const [, name, version, chainId, verifyingContract] = domain;
         const request = {
           holder: body.subject,

@@ -591,9 +591,139 @@ contract CredentialRegistryTest is Test {
             holder, keccak256("CRED_B"), DATA_HASH, 0, 0, deadline, issuerPk
         );
 
-        // Should revert because nonce 0 was already consumed for this holder
-        vm.expectRevert();
+        // Reverts because the issuer's nonce 0 was already used
+        vm.expectRevert(abi.encodeWithSelector(CredentialRegistry.NonceUsed.selector, issuer, uint256(0)));
         registry.issueCredentialWithSig(req2, sig2);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Security review fixes: M-1 (nonces), M-2 (expiry), M-7 (ownership)
+    // ═══════════════════════════════════════════════════════════════
+
+    function _req(address _holder, bytes32 _type, uint256 _expiry, uint256 _nonce, uint256 _deadline)
+        internal
+        pure
+        returns (ICredentialRegistry.CredentialRequest memory)
+    {
+        return ICredentialRegistry.CredentialRequest({
+            holder: _holder, credentialType: _type, dataHash: DATA_HASH, expiryTimestamp: _expiry, nonce: _nonce, deadline: _deadline
+        });
+    }
+
+    function test_M1_NoncesArePerSigner_TwoIssuersSameHolderSameNonce() public {
+        (address issuer2, uint256 issuer2Pk) = makeAddrAndKey("issuer2");
+        registry.authorizeIssuer(issuer2);
+        uint256 deadline = block.timestamp + 1 hours;
+
+        // Before the fix, whoever landed first consumed the holder's nonce and killed the other signature.
+        bytes memory sigA = _signCredentialRequest(holder, keccak256("A"), DATA_HASH, 0, 7, deadline, issuerPk);
+        bytes memory sigB = _signCredentialRequest(holder, keccak256("B"), DATA_HASH, 0, 7, deadline, issuer2Pk);
+        registry.issueCredentialWithSig(_req(holder, keccak256("A"), 0, 7, deadline), sigA);
+        registry.issueCredentialWithSig(_req(holder, keccak256("B"), 0, 7, deadline), sigB);
+
+        assertTrue(registry.nonceUsed(issuer, 7));
+        assertTrue(registry.nonceUsed(issuer2, 7));
+        assertEq(registry.totalCredentials(), 2);
+    }
+
+    function test_M1_NonceIsBoundToTheSignedData() public {
+        uint256 deadline = block.timestamp + 1 hours;
+        // Signed with nonce 5 but submitted with nonce 6: the recovered signer is not an issuer.
+        bytes memory sig = _signCredentialRequest(holder, CRED_TYPE, DATA_HASH, 0, 5, deadline, issuerPk);
+        vm.expectRevert();
+        registry.issueCredentialWithSig(_req(holder, CRED_TYPE, 0, 6, deadline), sig);
+        assertFalse(registry.nonceUsed(issuer, 5));
+        assertFalse(registry.nonceUsed(issuer, 6));
+    }
+
+    function test_M1_NoncesAreUnorderedAndReplayFails() public {
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sigHigh = _signCredentialRequest(holder, keccak256("H"), DATA_HASH, 0, 1000, deadline, issuerPk);
+        bytes memory sigLow = _signCredentialRequest(holder, keccak256("L"), DATA_HASH, 0, 1, deadline, issuerPk);
+        registry.issueCredentialWithSig(_req(holder, keccak256("H"), 0, 1000, deadline), sigHigh);
+        registry.issueCredentialWithSig(_req(holder, keccak256("L"), 0, 1, deadline), sigLow); // lower nonce still fine
+        vm.expectRevert(abi.encodeWithSelector(CredentialRegistry.NonceUsed.selector, issuer, uint256(1000)));
+        registry.issueCredentialWithSig(_req(holder, keccak256("H"), 0, 1000, deadline), sigHigh);
+    }
+
+    function test_M1_CancelNonceVoidsAPendingSignature() public {
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _signCredentialRequest(holder, CRED_TYPE, DATA_HASH, 0, 42, deadline, issuerPk);
+
+        vm.expectEmit(true, false, false, true);
+        emit ICredentialRegistry.NonceCancelled(issuer, 42);
+        vm.prank(issuer);
+        registry.cancelNonce(42);
+
+        vm.expectRevert(abi.encodeWithSelector(CredentialRegistry.NonceUsed.selector, issuer, uint256(42)));
+        registry.issueCredentialWithSig(_req(holder, CRED_TYPE, 0, 42, deadline), sig);
+    }
+
+    function test_M1_CancellingSomeoneElsesNonceDoesNothing() public {
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _signCredentialRequest(holder, CRED_TYPE, DATA_HASH, 0, 9, deadline, issuerPk);
+        vm.prank(unauthorized);
+        registry.cancelNonce(9); // burns the stranger's own nonce 9, not the issuer's
+        registry.issueCredentialWithSig(_req(holder, CRED_TYPE, 0, 9, deadline), sig);
+        assertEq(registry.totalCredentials(), 1);
+    }
+
+    function test_M2_SignedPathRejectsAlreadyExpiredCredentials() public {
+        vm.warp(1_800_000_000);
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256[2] memory bad = [block.timestamp - 1, block.timestamp]; // past, and exactly now
+        for (uint256 i; i < bad.length; ++i) {
+            bytes memory sig = _signCredentialRequest(holder, CRED_TYPE, DATA_HASH, bad[i], i, deadline, issuerPk);
+            vm.expectRevert(abi.encodeWithSelector(CredentialRegistry.InvalidExpiry.selector, bad[i]));
+            registry.issueCredentialWithSig(_req(holder, CRED_TYPE, bad[i], i, deadline), sig);
+        }
+        assertEq(registry.totalCredentials(), 0);
+        assertEq(registry.activeCredentials(), 0);
+    }
+
+    function test_M2_SignedPathRejectsExpiryBeyondTheMaximum() public {
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256 tooFar = 4102444801; // one second past year 2100
+        bytes memory sig = _signCredentialRequest(holder, CRED_TYPE, DATA_HASH, tooFar, 0, deadline, issuerPk);
+        vm.expectRevert(abi.encodeWithSelector(CredentialRegistry.InvalidExpiry.selector, tooFar));
+        registry.issueCredentialWithSig(_req(holder, CRED_TYPE, tooFar, 0, deadline), sig);
+    }
+
+    function test_M2_DirectAndSignedPathsAgreeOnAFutureExpiry() public {
+        uint64 expiry = uint64(block.timestamp + 1 days);
+        bytes32 direct = _issue(issuer, holder, keccak256("D"), DATA_HASH, expiry);
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _signCredentialRequest(holder, keccak256("S"), DATA_HASH, expiry, 0, deadline, issuerPk);
+        bytes32 signed_ = registry.issueCredentialWithSig(_req(holder, keccak256("S"), expiry, 0, deadline), sig);
+        assertTrue(registry.isCredentialValid(direct));
+        assertTrue(registry.isCredentialValid(signed_));
+    }
+
+    function test_M7_OwnershipTransferIsTwoStep() public {
+        address newOwner = makeAddr("newOwner");
+        registry.transferOwnership(newOwner);
+        assertEq(registry.owner(), owner, "still the old owner until accepted");
+        assertEq(registry.pendingOwner(), newOwner);
+
+        vm.prank(unauthorized);
+        vm.expectRevert();
+        registry.acceptOwnership();
+
+        vm.prank(newOwner);
+        registry.acceptOwnership();
+        assertEq(registry.owner(), newOwner);
+    }
+
+    function test_M7_TransferToAWrongAddressIsRecoverable() public {
+        registry.transferOwnership(makeAddr("typo"));
+        registry.transferOwnership(makeAddr("right")); // the owner can simply re-propose
+        assertEq(registry.owner(), owner);
+    }
+
+    function test_M7_RenounceOwnershipReverts() public {
+        vm.expectRevert(CredentialRegistry.RenounceDisabled.selector);
+        registry.renounceOwnership();
+        assertEq(registry.owner(), owner);
     }
 
     function test_IssueCredentialWithSig_WithExpiry() public {

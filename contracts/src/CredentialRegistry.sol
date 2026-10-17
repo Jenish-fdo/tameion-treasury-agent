@@ -2,10 +2,10 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 import {ICredentialRegistry} from "./interfaces/ICredentialRegistry.sol";
 
 /**
@@ -22,10 +22,9 @@ import {ICredentialRegistry} from "./interfaces/ICredentialRegistry.sol";
  */
 contract CredentialRegistry is
     ICredentialRegistry,
-    Ownable,
+    Ownable2Step,
     ReentrancyGuard,
-    EIP712,
-    Nonces
+    EIP712
 {
     // ──────────────────────────────────────────────────────────────
     // Constants & Immutables
@@ -48,6 +47,9 @@ contract CredentialRegistry is
 
     /// @notice Authorized issuers mapping
     mapping(address => bool) internal _authorizedIssuers;
+
+    /// @notice Per-signer, unordered nonces for signed issuance. A nonce is single-use and can be cancelled.
+    mapping(address signer => mapping(uint256 nonce => bool used)) public nonceUsed;
 
     /// @notice Total credentials issued (never decremented on revoke)
     uint256 public totalCredentials;
@@ -85,6 +87,8 @@ contract CredentialRegistry is
     error InvalidHolder();
     error ZeroAddress();
     error InvalidDeadline();
+    error NonceUsed(address signer, uint256 nonce);
+    error RenounceDisabled();
 
     // ──────────────────────────────────────────────────────────────
     // Constructor
@@ -126,8 +130,7 @@ contract CredentialRegistry is
         uint64 expiryTimestamp
     ) external override onlyIssuer nonReentrant returns (bytes32 id) {
         if (holder == address(0)) revert InvalidHolder();
-        if (expiryTimestamp != 0 && expiryTimestamp > MAX_EXPIRY) revert InvalidExpiry(expiryTimestamp);
-        if (expiryTimestamp != 0 && expiryTimestamp <= block.timestamp) revert InvalidExpiry(expiryTimestamp);
+        _validateExpiry(expiryTimestamp);
 
         id = _issue(msg.sender, holder, credentialType, dataHash, expiryTimestamp);
     }
@@ -136,12 +139,10 @@ contract CredentialRegistry is
      * @inheritdoc ICredentialRegistry
      *
      * @dev Verifies the EIP-712 typed data signature from the issuer.
-     *      The signer must be an authorized issuer. The nonce prevents
-     *      replay attacks and is incremented via {Nonces} mixin.
-     *
-     * Gas optimization: signature recovery is done in-memory; the nonce
-     * increment uses `unchecked` since Nonces tracks per-address and
-     * overflow at 2^256 is not a practical concern.
+     *      The signer must be an authorized issuer. `request.nonce` is part of the
+     *      signed data and is single-use per signer (see {nonceUsed}); the signer can
+     *      void a pending request with {cancelNonce}. Expiry follows the same rules as
+     *      {issueCredential}.
      */
     function issueCredentialWithSig(
         CredentialRequest calldata request,
@@ -149,8 +150,9 @@ contract CredentialRegistry is
     ) external override nonReentrant returns (bytes32 id) {
         if (request.holder == address(0)) revert InvalidHolder();
         if (request.deadline < block.timestamp) revert SignatureExpired(request.deadline);
-        if (request.expiryTimestamp != 0 && request.expiryTimestamp > MAX_EXPIRY)
-            revert InvalidExpiry(request.expiryTimestamp);
+        // Same expiry rules as the direct path (security review M-2).
+        if (request.expiryTimestamp > MAX_EXPIRY) revert InvalidExpiry(request.expiryTimestamp);
+        _validateExpiry(uint64(request.expiryTimestamp));
 
         // Verify EIP-712 signature
         bytes32 structHash = keccak256(abi.encode(
@@ -159,7 +161,7 @@ contract CredentialRegistry is
             request.credentialType,
             request.dataHash,
             request.expiryTimestamp,
-            _useNonce(request.holder), // consumes nonce, reverts on mismatch
+            request.nonce, // bound into the signed data
             request.deadline
         ));
 
@@ -167,6 +169,10 @@ contract CredentialRegistry is
         address signer = ECDSA.recover(digest, signature);
 
         if (!_authorizedIssuers[signer]) revert NotAuthorizedIssuer(signer);
+
+        // Per-signer nonce, checked only once the signer is known (security review M-1).
+        if (nonceUsed[signer][request.nonce]) revert NonceUsed(signer, request.nonce);
+        nonceUsed[signer][request.nonce] = true;
 
         id = _issue(signer, request.holder, request.credentialType, request.dataHash, uint64(request.expiryTimestamp));
     }
@@ -275,6 +281,20 @@ contract CredentialRegistry is
         return _authorizedIssuers[issuer];
     }
 
+    /**
+     * @inheritdoc ICredentialRegistry
+     * @dev Lets a signer void a signed-but-unsubmitted request. Idempotent.
+     */
+    function cancelNonce(uint256 nonce) external override {
+        nonceUsed[msg.sender][nonce] = true;
+        emit NonceCancelled(msg.sender, nonce);
+    }
+
+    /// @dev Renouncing would permanently disable issuer management; use the two-step transfer instead.
+    function renounceOwnership() public pure override {
+        revert RenounceDisabled();
+    }
+
     // ──────────────────────────────────────────────────────────────
     // Views
     // ──────────────────────────────────────────────────────────────
@@ -329,6 +349,12 @@ contract CredentialRegistry is
     // ═══════════════════════════════════════════════════════════════
     // Internal
     // ═══════════════════════════════════════════════════════════════
+
+    /// @dev One expiry rule for every issuance path: 0 means "never expires", otherwise it must be in the future and not past MAX_EXPIRY.
+    function _validateExpiry(uint256 expiryTimestamp) internal view {
+        if (expiryTimestamp == 0) return;
+        if (expiryTimestamp > MAX_EXPIRY || expiryTimestamp <= block.timestamp) revert InvalidExpiry(expiryTimestamp);
+    }
 
     /// @dev Stores a new credential and emits {CredentialIssued}. Callers validate inputs first.
     function _issue(address issuer, address holder, bytes32 credentialType, bytes32 dataHash, uint64 expiryTimestamp)
