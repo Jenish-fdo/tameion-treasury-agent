@@ -14,7 +14,6 @@ DEPLOYER=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 ISSUER_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
 ISSUER=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
 RELAYER_KEY=0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a # Anvil account 4 (pays gas)
-OWNER_KEY=0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba # Anvil account 5: a demo business owner
 
 cd "$CONTRACTS"
 
@@ -30,6 +29,14 @@ create() { # <contract path:name> [constructor args...]
 REGISTRY=$(create src/CredentialRegistry.sol:CredentialRegistry "Credentia" "1" "$DEPLOYER")
 cast send "$REGISTRY" "authorizeIssuer(address)" "$ISSUER" --rpc-url "$RPC" --private-key "$DEPLOYER_KEY" >/dev/null
 
+# A demo business owner with a FRESH random key (nothing about it is stored in the repo), funded from the deployer.
+OWNER_JSON=$(cast wallet new --json)
+# (forge versions differ: the JSON is a bare object, a list of one, or wrapped as {"data": [...]})
+owner_field() { printf '%s' "$OWNER_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); d=d.get("data", d) if isinstance(d,dict) else d; d=d[0] if isinstance(d,list) else d; print(d[sys.argv[1]])' "$1"; }
+OWNER_KEY=$(owner_field private_key)
+OWNER_ADDRESS=$(owner_field address)
+cast send "$OWNER_ADDRESS" --value 100ether --rpc-url "$RPC" --private-key "$DEPLOYER_KEY" >/dev/null
+
 MANDATES=$(create src/MandateRegistry.sol:MandateRegistry)
 DECISIONS=$(create src/DecisionLog.sol:DecisionLog "$MANDATES")
 
@@ -42,11 +49,12 @@ BACKEND_WALLET_PRIVATE_KEY=$RELAYER_KEY
 MANDATE_REGISTRY_ADDRESS=$MANDATES
 DECISION_LOG_ADDRESS=$DECISIONS
 BUSINESS_OWNER_PRIVATE_KEYS=$OWNER_KEY
+DEMO_OWNER_ADDRESS=$OWNER_ADDRESS
 EOF
 
 echo "CredentialRegistry $REGISTRY"
 echo "MandateRegistry    $MANDATES"
 echo "DecisionLog        $DECISIONS"
-echo "Demo owner         0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
+echo "Demo owner         $OWNER_ADDRESS (random key, written to backend/.env.local)"
 echo "Authorized issuer  $ISSUER"
 echo "Wrote backend/.env.local"

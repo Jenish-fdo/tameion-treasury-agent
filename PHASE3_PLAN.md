@@ -250,3 +250,30 @@ All existing suites must stay green: Foundry, backend jest, backend e2e, web jes
 
 ## 9. Gate
 Implementation proceeds on this plan. **I will not deploy to any network, and will not send any transaction to Arc testnet or mainnet, until you approve a deployment.** Local Foundry and Anvil only. `deploy` scripts will be written and tested locally; running them against Arc testnet needs your explicit go-ahead and a keystore you control (never a key in the repo).
+
+---
+
+## Implementation status (2026-10-17, branch `feat/phase3-mandates`)
+
+Built to the plan above. **Nothing is deployed; no transaction was sent to Arc testnet or mainnet.** Everything ran against the local Foundry VM and a local Anvil node.
+
+| Part | Commit |
+|---|---|
+| This plan | `84234f2` |
+| `CredentialRegistry` fixes M-1, M-2, M-7 + backend nonce change | `c519774` |
+| `MandateRegistry` (+ `IMandateRegistry`, `MandateCategories`) | `d476819` |
+| `DecisionLog` (+ `IDecisionLog`) and `DeployTreasury.s.sol` | `abfa16f` |
+| Backend services, routes, ABIs, e2e | `3f28591` |
+| Founder and agent screens, proxy | `ae5f67a` |
+
+Where the build differs from, or adds to, the plan:
+- **Owner actions are direct transactions** from the managed owner key (register business, `setRecorder`, `createMandate`, `revokeMandate`). The contract also supports gasless `createMandateWithSig` / `revokeMandateWithSig`; they are tested in Foundry but the backend does not use them yet (that is the Circle-wallet phase).
+- **`POST /businesses`** is an addition: a business must exist before a mandate can, and the relayer must be a recorder before it can write decisions.
+- **`DecisionLog` extras beyond the spec:** `rulesFailed` bitmap, `parentDecisionId` (links a follow-up to the record it resolves, which is how pending approvals are found), `clientRef` (idempotent retries), `seq` and `prevHash` (ordering and the hash chain).
+- **Human approval** is enforced in `consume` (EIP-712 `PaymentApproval`, EOA or ERC-1271). The UI can only *show* pending approvals; there is no approve button because the browser has no signing wallet.
+- **Demo owner key:** `deploy-local.sh` generates a fresh random owner key for each local run and writes it to the git-ignored `backend/.env.local`. The script still contains Anvil's well-known public test keys from before this phase; none were added.
+- The local deploy script and tests use standard Anvil, which **does not reproduce Arc** (native-USDC transfer reverts, blocklist behaviour). Arc's own simulator (`arc-anvil --network arc`) was not used.
+
+How the tests were checked beyond passing: the two new contracts were deliberately broken 25 ways (11 in `MandateRegistry`, 14 in `DecisionLog`: threshold and expiry boundaries, nonce reuse, agent and approver checks, cap off-by-one, single-use, allowlist, replay, revoked status, signature deadline, business/agent mismatch, tx-hash and escalation rules, chain head and `prevHash`, idempotency, hash coverage); every mutant failed the suite. The screens were also run by hand against the real stack and driven in a browser.
+
+Before any Arc testnet deployment (needs your go-ahead): re-run the contract tests under `arc-anvil`, have the contracts independently reviewed, confirm the EVM version Arc accepts for the compiled bytecode, fund a keystore you control, and decide who the real business owner signs as.

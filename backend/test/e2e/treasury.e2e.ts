@@ -38,7 +38,7 @@ async function chainAvailable(): Promise<boolean> {
 }
 
 const KEY = 'test-treasury-key-0123456789abcdef';
-const OWNER = '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc'; // Anvil account 5: the demo business owner deploy-local.sh configures
+let OWNER = ''; // the demo business owner deploy-local.sh generated (DEMO_OWNER_ADDRESS in backend/.env.local)
 const STRANGER_OWNER = '0x976EA74026E726554dB657fA54763abd0C3a0aa9'; // Anvil account 6: the API holds no key for it
 const AGENT = '0x14dC79964da2C08b23698B3D3cc7Ca32193d9955'; // Anvil account 7: the agent, impersonated
 const VENDOR = '0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f'; // Anvil account 8
@@ -99,6 +99,7 @@ describe('Treasury API (e2e)', { skip: chainUp ? false : 'local chain not availa
 
   before(async () => {
     dotenv.config({ path: envFile });
+    OWNER = getAddress(process.env.DEMO_OWNER_ADDRESS!);
     Object.assign(process.env, {
       NODE_ENV: 'test',
       LOG_LEVEL: 'error',
