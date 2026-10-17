@@ -38,6 +38,7 @@ const FREE_KEY = 'test-free-key-0123456789abcdef012';
 const ISSUER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'; // Anvil account 1 (managed + authorized by deploy-local.sh)
 const SUBJECT = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'; // Anvil account 2
 const OTHER = '0x90F79bf6EB2c4f870365E785982E1f101E93b906'; // Anvil account 3
+const UNKNOWN_ID = `0x${'ab'.repeat(32)}`; // well-formed bytes32 that was never issued
 
 type Behaviour = { status?: number; content: string };
 const mockBehaviour: Record<'kimi' | 'qwen' | 'jev', Behaviour> = {
@@ -109,20 +110,20 @@ describe('Credentia API (e2e)', { skip: chainUp ? false : 'local chain not avail
 
   describe('authentication & rate limiting', () => {
     it('rejects missing and wrong API keys with 401', async () => {
-      assert.equal((await call('GET', `/trust-score/${SUBJECT}`, { key: null })).status, 401);
-      const wrong = await call('GET', `/trust-score/${SUBJECT}`, { key: 'wrong-key-wrong-key-wrong-key' });
+      assert.equal((await call('GET', `/credential/${UNKNOWN_ID}/verify`, { key: null })).status, 401);
+      const wrong = await call('GET', `/credential/${UNKNOWN_ID}/verify`, { key: 'wrong-key-wrong-key-wrong-key' });
       assert.equal(wrong.status, 401);
       assert.equal(wrong.body.error.code, 'UNAUTHORIZED');
     });
 
     it('accepts Authorization: Bearer', async () => {
-      const res = await fetch(`${base}/trust-score/${SUBJECT}`, { headers: { authorization: `Bearer ${PRO_KEY}` } });
-      assert.equal(res.status, 200);
+      const res = await fetch(`${base}/credential/${UNKNOWN_ID}/verify`, { headers: { authorization: `Bearer ${PRO_KEY}` } });
+      assert.equal(res.status, 404); // authenticated: the credential is simply unknown
     });
 
     it('returns 429 after the free-tier limit is exceeded', async () => {
       const statuses: number[] = [];
-      for (let i = 0; i < 12; i++) statuses.push((await call('GET', '/trust-score/not-an-address', { key: FREE_KEY })).status);
+      for (let i = 0; i < 12; i++) statuses.push((await call('GET', '/credential/not-an-id/verify', { key: FREE_KEY })).status);
       assert.equal(statuses.filter((s) => s === 400).length, 10);
       assert.deepEqual(statuses.slice(10), [429, 429]);
     });
@@ -196,37 +197,6 @@ describe('Credentia API (e2e)', { skip: chainUp ? false : 'local chain not avail
         assert.ok(body.requestId);
       }
       assert.equal((await call('POST', '/credential/mint', { raw: '{not json' })).status, 400);
-    });
-
-    it('lists the agent\'s active credentials with its trust score', async () => {
-      const { status, body } = await call('GET', `/agent/${SUBJECT}/credentials`);
-      assert.equal(status, 200);
-      assert.equal(body.credentials.length, 1);
-      assert.equal(body.credentials[0].credentialId, credentialId);
-      assert.equal(body.credentials[0].credentialType, 'KYC');
-      assert.equal(typeof body.trustScore, 'number');
-      const empty = await call('GET', `/agent/${OTHER}/credentials`);
-      assert.deepEqual(empty.body.credentials, []);
-    });
-  });
-
-  describe('GET /trust-score/:address', () => {
-    it('returns score, breakdown and lastUpdated', async () => {
-      const { status, body } = await call('GET', `/trust-score/${SUBJECT}`);
-      assert.equal(status, 200);
-      assert.equal(typeof body.score, 'number');
-      assert.ok(body.score >= 0 && body.score <= 100);
-      for (const f of ['credentials', 'attestations', 'staking']) {
-        assert.equal(typeof body.breakdown[f].points, 'number');
-        assert.equal(typeof body.breakdown[f].weightBps, 'number');
-      }
-      assert.equal(typeof body.lastUpdated, 'number');
-    });
-
-    it('returns 400 for an invalid address', async () => {
-      const { status, body } = await call('GET', '/trust-score/0x123');
-      assert.equal(status, 400);
-      assert.equal(body.error.code, 'VALIDATION_ERROR');
     });
   });
 

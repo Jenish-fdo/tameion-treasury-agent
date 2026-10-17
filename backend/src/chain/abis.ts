@@ -1,6 +1,6 @@
 import { parseAbi } from 'viem';
 
-// Mirrors contracts/src/CredentialRegistry.sol and TrustScore.sol (as implemented).
+// Mirrors contracts/src/CredentialRegistry.sol (as implemented).
 export const credentialRegistryAbi = parseAbi([
   'struct Credential { address issuer; address holder; bytes32 credentialType; bytes32 dataHash; uint64 issuedAt; uint64 expiryTimestamp; bool revoked; }',
   'struct CredentialRequest { address holder; bytes32 credentialType; bytes32 dataHash; uint256 expiryTimestamp; uint256 nonce; uint256 deadline; }',
@@ -16,13 +16,6 @@ export const credentialRegistryAbi = parseAbi([
   'error InvalidExpiry(uint256 expiry)',
   'error SignatureExpired(uint256 deadline)',
   'error InvalidHolder()',
-]);
-
-export const trustScoreAbi = parseAbi([
-  'function getScore(address identity) view returns (uint256 score)',
-  'function getScoreBreakdown(address identity) view returns (uint256 score, uint256 credentialScore, uint256 attestationScore, uint256 stakingScore)',
-  'function getLastUpdated(address identity) view returns (uint256 timestamp)',
-  'function getFactorWeight(bytes32 factorType) view returns (uint256 weight)',
 ]);
 
 export const CREDENTIAL_REQUEST_TYPES = {

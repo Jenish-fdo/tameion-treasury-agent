@@ -27,24 +27,16 @@ create() { # <contract path:name> [constructor args...]
 }
 
 REGISTRY=$(create src/CredentialRegistry.sol:CredentialRegistry "Credentia" "1" "$DEPLOYER")
-TRUST=$(create src/TrustScore.sol:TrustScore "$DEPLOYER" "$REGISTRY" 0x0000000000000000000000000000000000000000)
-AUSD=$(create test/mocks/MockAUSD.sol:MockAUSD)
-STAKING=$(create src/StakingPool.sol:StakingPool "$AUSD" "$DEPLOYER" "$TRUST" 0)
-
-cast send "$TRUST" "setStakingPool(address)" "$STAKING" --rpc-url "$RPC" --private-key "$DEPLOYER_KEY" >/dev/null
 cast send "$REGISTRY" "authorizeIssuer(address)" "$ISSUER" --rpc-url "$RPC" --private-key "$DEPLOYER_KEY" >/dev/null
 
 cat > "$HERE/../.env.local" <<EOF
 MONAD_RPC_URL=$RPC
 MONAD_CHAIN_ID=10143
 CREDENTIAL_REGISTRY_ADDRESS=$REGISTRY
-TRUST_SCORE_ADDRESS=$TRUST
 ISSUER_PRIVATE_KEYS=$ISSUER_KEY
 BACKEND_WALLET_PRIVATE_KEY=$RELAYER_KEY
 EOF
 
 echo "CredentialRegistry $REGISTRY"
-echo "TrustScore         $TRUST"
-echo "StakingPool        $STAKING"
 echo "Authorized issuer  $ISSUER"
 echo "Wrote backend/.env.local"

@@ -37,13 +37,6 @@ export const requireRegistry = (): Address => {
   return config.chain.credentialRegistry;
 };
 
-export const requireTrustScore = (): Address => {
-  if (!config.chain.trustScore) {
-    throw new AppError('TrustScore address is not configured', 503, 'NOT_CONFIGURED');
-  }
-  return config.chain.trustScore;
-};
-
 /** Name of the custom error a contract call reverted with, if any. */
 export function revertName(err: unknown): string | undefined {
   if (err instanceof BaseError) {

@@ -6,7 +6,6 @@ import { logger } from './utils/logger.js';
 const app = createApp();
 
 if (!config.chain.credentialRegistry) logger.warn('CREDENTIAL_REGISTRY_ADDRESS is not set: credential endpoints will return 503');
-if (!config.chain.trustScore) logger.warn('TRUST_SCORE_ADDRESS is not set: trust-score endpoints will return 503');
 if (managedIssuers().length === 0) logger.warn('ISSUER_PRIVATE_KEYS is not set: POST /credential/mint will reject every issuer');
 
 const server = app.listen(config.port, () => {

@@ -42,7 +42,6 @@ const envSchema = z.object({
   MONAD_RPC_URL: z.string().url().default('https://testnet-rpc.monad.xyz'),
   MONAD_CHAIN_ID: z.coerce.number().int().positive().default(10143),
   CREDENTIAL_REGISTRY_ADDRESS: optionalAddress,
-  TRUST_SCORE_ADDRESS: optionalAddress,
   // Pays gas for issueCredentialWithSig. Falls back to the issuer key when unset.
   BACKEND_WALLET_PRIVATE_KEY: z.string().optional(),
   // Comma-separated private keys the API may sign credentials with (one per managed issuer).
@@ -122,7 +121,6 @@ export const config = {
     rpcUrl: env.MONAD_RPC_URL,
     chainId: env.MONAD_CHAIN_ID,
     credentialRegistry: env.CREDENTIAL_REGISTRY_ADDRESS as `0x${string}` | undefined,
-    trustScore: env.TRUST_SCORE_ADDRESS as `0x${string}` | undefined,
     relayerKey: env.BACKEND_WALLET_PRIVATE_KEY as `0x${string}` | undefined,
     issuerKeys: issuerKeys as `0x${string}`[],
     txConfirmTimeoutMs: env.TX_CONFIRM_TIMEOUT_MS,
