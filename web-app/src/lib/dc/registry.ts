@@ -1,5 +1,5 @@
 import { BaseError, ContractFunctionRevertedError, createPublicClient, createWalletClient, http, type Address, type Hex, type LocalAccount } from 'viem';
-import { monadTestnet } from '@/lib/monad';
+import { arcChain } from '@/lib/arc';
 import { REGISTRY_ADDRESS } from '@/lib/chain';
 import type { OnChainCredential } from './credential';
 import { ZERO_ADDRESS } from './credential';
@@ -49,7 +49,7 @@ export const isAnchoringEnabled = Boolean(registryAddress);
 
 let client: ReturnType<typeof createPublicClient> | null = null;
 function publicClient() {
-  client ??= createPublicClient({ chain: monadTestnet, transport: http(monadTestnet.rpcUrls.default.http[0]) });
+  client ??= createPublicClient({ chain: arcChain, transport: http(arcChain.rpcUrls.default.http[0]) });
   return client;
 }
 
@@ -105,7 +105,7 @@ type RegistryWrite =
 /** Sends one registry transaction from the unlocked passkey account and waits for it to be mined. */
 export async function writeRegistry(signer: LocalAccount, call: RegistryWrite): Promise<Hex> {
   if (!registryAddress) throw new Error('registry not configured');
-  const wallet = createWalletClient({ account: signer, chain: monadTestnet, transport: http(monadTestnet.rpcUrls.default.http[0]) });
+  const wallet = createWalletClient({ account: signer, chain: arcChain, transport: http(arcChain.rpcUrls.default.http[0]) });
   const hash =
     call.functionName === 'recordVerification'
       ? await wallet.writeContract({ address: registryAddress, abi: registryAbi, functionName: 'recordVerification', args: call.args })
@@ -121,6 +121,6 @@ export function writeErrorMessage(e: unknown, fallback: string): string {
   const msg = e instanceof Error ? `${e.name} ${e.message}` : String(e);
   if (name === 'NotAuthorizedIssuer' || /NotAuthorizedIssuer/.test(msg)) return 'This account is not an authorised issuer on the registry. Ask the registry owner to authorise it, then try again.';
   if (name === 'CredentialAlreadyExists' || /CredentialAlreadyExists|already exists/i.test(msg)) return 'An identical credential already exists. Change any detail and try again.';
-  if (/insufficient funds|exceeds the balance/i.test(msg)) return 'Your passkey account has no Monad testnet gas. Get testnet MON from the faucet in the account menu and try again.';
+  if (/insufficient funds|exceeds the balance/i.test(msg)) return 'Your passkey account has no USDC for gas on Arc. On testnet, get USDC from the faucet in the account menu and try again.';
   return fallback;
 }

@@ -2,7 +2,7 @@
  * End-to-end API tests against a local Anvil chain with the contracts deployed, plus mock
  * OpenAI-compatible model servers. Skipped automatically when the chain is not available:
  *
- *   anvil --chain-id 10143 &        # (needs ~/.foundry/bin on PATH)
+ *   anvil --chain-id 5042002 &        # (needs ~/.foundry/bin on PATH)
  *   ./scripts/deploy-local.sh       # writes backend/.env.local
  *   npm run test:e2e
  */
@@ -16,7 +16,7 @@ import { after, before, describe, it } from 'node:test';
 import dotenv from 'dotenv';
 
 const envFile = path.resolve(import.meta.dirname, '../../.env.local');
-const rpcUrl = process.env.MONAD_RPC_URL?.includes('127.0.0.1') ? process.env.MONAD_RPC_URL : 'http://127.0.0.1:8545';
+const rpcUrl = process.env.ARC_RPC_URL?.includes('127.0.0.1') ? process.env.ARC_RPC_URL : 'http://127.0.0.1:8545';
 
 async function chainAvailable(): Promise<boolean> {
   if (!existsSync(envFile)) return false;
@@ -85,7 +85,8 @@ describe('Credentia API (e2e)', { skip: chainUp ? false : 'local chain not avail
     Object.assign(process.env, {
       NODE_ENV: 'test',
       LOG_LEVEL: 'error',
-      MONAD_RPC_URL: rpcUrl,
+      ARC_RPC_URL: rpcUrl,
+      ARC_CHAIN_ID: '5042002',
       API_KEYS: FREE_KEY,
       PRO_API_KEYS: PRO_KEY,
       RATE_LIMIT_FREE_PER_MIN: '10',

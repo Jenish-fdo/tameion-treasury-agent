@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Fingerprint, KeyRound, Loader2 } from 'lucide-react';
 import { useAccount } from '@/components/account';
-import { FAUCET_URL } from '@/lib/monad';
+import { FAUCET_URL } from '@/lib/arc';
 import { shortenAddress } from '@/lib/utils';
 import { copyText } from './ShareBlock';
 

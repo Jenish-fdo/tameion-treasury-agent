@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { isAddress } from 'viem';
 import { z } from 'zod';
+import { ARC_NETWORKS } from '../chain/arc.js';
 
 dotenv.config();
 
@@ -39,8 +40,11 @@ const envSchema = z.object({
   INTENT_RATE_LIMIT_PRO_PER_HOUR: z.coerce.number().int().positive().default(100),
 
   // Chain
-  MONAD_RPC_URL: z.string().url().default('https://testnet-rpc.monad.xyz'),
-  MONAD_CHAIN_ID: z.coerce.number().int().positive().default(10143),
+  // Arc network. RPC URL, chain ID and explorer default to the selected network; override them for a local node.
+  ARC_NETWORK: z.enum(['testnet', 'mainnet']).default('testnet'),
+  ARC_RPC_URL: z.string().url().optional(),
+  ARC_CHAIN_ID: z.coerce.number().int().positive().optional(),
+  ARC_EXPLORER_URL: z.string().url().optional(),
   CREDENTIAL_REGISTRY_ADDRESS: optionalAddress,
   // Pays gas for issueCredentialWithSig. Falls back to the issuer key when unset.
   BACKEND_WALLET_PRIVATE_KEY: z.string().optional(),
@@ -118,8 +122,11 @@ export const config = {
     intentWindowMs: 3_600_000,
   },
   chain: {
-    rpcUrl: env.MONAD_RPC_URL,
-    chainId: env.MONAD_CHAIN_ID,
+    network: env.ARC_NETWORK,
+    networkName: ARC_NETWORKS[env.ARC_NETWORK].name,
+    rpcUrl: env.ARC_RPC_URL ?? ARC_NETWORKS[env.ARC_NETWORK].rpcUrl,
+    chainId: env.ARC_CHAIN_ID ?? ARC_NETWORKS[env.ARC_NETWORK].chainId,
+    explorerUrl: env.ARC_EXPLORER_URL ?? ARC_NETWORKS[env.ARC_NETWORK].explorerUrl,
     credentialRegistry: env.CREDENTIAL_REGISTRY_ADDRESS as `0x${string}` | undefined,
     relayerKey: env.BACKEND_WALLET_PRIVATE_KEY as `0x${string}` | undefined,
     issuerKeys: issuerKeys as `0x${string}`[],

@@ -1,21 +1,22 @@
 import { BaseError, ContractFunctionRevertedError, createPublicClient, createWalletClient, defineChain, http, type Address } from 'viem';
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts';
 import { config } from '../config/index.js';
+import { USDC_NATIVE_DECIMALS } from './arc.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 
 export const chain = defineChain({
   id: config.chain.chainId,
-  name: 'Monad Testnet',
-  nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
+  name: config.chain.networkName,
+  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: USDC_NATIVE_DECIMALS },
   rpcUrls: { default: { http: [config.chain.rpcUrl] } },
-  blockExplorers: { default: { name: 'Monad Explorer', url: 'https://explorer.testnet.monad.xyz' } },
+  blockExplorers: { default: { name: 'Arc Explorer', url: config.chain.explorerUrl } },
 });
 
 const transport = http(config.chain.rpcUrl, { timeout: 10_000, retryCount: 2 });
 
-// Monad blocks are ~400ms, so poll quickly for receipts.
-export const publicClient = createPublicClient({ chain, transport, pollingInterval: 500 });
+// Poll once a second for receipts.
+export const publicClient = createPublicClient({ chain, transport, pollingInterval: 1_000 });
 
 const issuerAccounts = new Map<string, PrivateKeyAccount>();
 for (const key of config.chain.issuerKeys) {

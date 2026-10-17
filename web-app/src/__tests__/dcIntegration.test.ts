@@ -8,7 +8,7 @@ import type { CopilotContext } from '@/lib/dc/copilot-types';
 import { assess, hashRecord, idForPayload, typeHash, type SharePayload } from '@/lib/dc/credential';
 import { reputationParts, reputationScore } from '@/lib/dc/reputation';
 
-jest.mock('@/lib/monad', () => ({ monadTestnet: { id: 10143, rpcUrls: { default: { http: ['http://localhost:0'] } } } }));
+jest.mock('@/lib/arc', () => ({ arcChain: { id: 5042002, rpcUrls: { default: { http: ['http://localhost:0'] } } }, ARC_EXPLORER_URL: 'https://explorer.example' }));
 
 const NOW = 1_800_000_000;
 

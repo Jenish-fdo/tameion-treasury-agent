@@ -30,8 +30,8 @@ REGISTRY=$(create src/CredentialRegistry.sol:CredentialRegistry "Credentia" "1" 
 cast send "$REGISTRY" "authorizeIssuer(address)" "$ISSUER" --rpc-url "$RPC" --private-key "$DEPLOYER_KEY" >/dev/null
 
 cat > "$HERE/../.env.local" <<EOF
-MONAD_RPC_URL=$RPC
-MONAD_CHAIN_ID=10143
+ARC_RPC_URL=$RPC
+ARC_CHAIN_ID=5042002
 CREDENTIAL_REGISTRY_ADDRESS=$REGISTRY
 ISSUER_PRIVATE_KEYS=$ISSUER_KEY
 BACKEND_WALLET_PRIVATE_KEY=$RELAYER_KEY

@@ -1,14 +1,14 @@
 {
   "name": "@credentia/contracts",
   "version": "0.1.0",
-  "description": "Credentia smart contracts for Monad",
+  "description": "Credentia Treasury Autopsy smart contracts",
   "private": true,
   "scripts": {
     "build": "forge build",
     "test": "forge test -vvv",
     "test:gas": "forge test --gas-report",
     "test:coverage": "forge coverage",
-    "deploy:testnet": "forge script script/DeployCredentialFlow.s.sol:DeployCredentialFlow --rpc-url monad_testnet --broadcast --verify",
+    "deploy:testnet": "forge script script/DeployCredentialFlow.s.sol:DeployCredentialFlow --rpc-url arc_testnet --broadcast --verify",
     "deploy:local": "forge script script/DeployCredentialFlow.s.sol:DeployCredentialFlow --rpc-url http://localhost:8545 --broadcast",
     "verify": "forge verify-contract",
     "format": "forge fmt",
@@ -29,7 +29,8 @@
     "solidity",
     "foundry",
     "smart-contracts",
-    "monad",
+    "arc",
+    "usdc",
     "identity",
     "attestations"
   ]

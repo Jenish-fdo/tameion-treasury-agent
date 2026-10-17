@@ -1,7 +1,7 @@
 {
   "name": "@credentia/backend",
   "version": "0.1.0",
-  "description": "Credentia backend API server for Monad ecosystem",
+  "description": "Credentia Treasury Autopsy backend API",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
