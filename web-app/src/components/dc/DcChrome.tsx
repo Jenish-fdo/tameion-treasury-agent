@@ -13,6 +13,9 @@ const LINKS = [
   { href: '/issue', label: 'Issue' },
   { href: '/dashboard', label: 'My credentials' },
   { href: '/payment-check', label: 'Payment check' },
+  { href: '/founder/mandates', label: 'Mandates' },
+  { href: '/founder/decisions', label: 'Decisions' },
+  { href: '/agent/validate', label: 'Agent check' },
 ];
 
 export function DcHeader({ wallet = true }: { wallet?: boolean }) {

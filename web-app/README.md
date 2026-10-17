@@ -22,7 +22,11 @@ pnpm build
 | `/receipt/[id]` | receipt for a record |
 | `/dashboard` | records issued from this browser (kept in `localStorage`) |
 | `/payment-check` | multi-model payment risk verdict through the backend |
+| `/founder/mandates` | founder: register a demo business, create and revoke agent mandates (Arc testnet, managed demo keys) |
+| `/founder/decisions` | founder: escalations waiting for a human, and the append-only decision log with hash checks (read-only; approving needs a signing wallet and is not built) |
+| `/agent/validate` | agent: read-only check of a proposed payment against a mandate; nothing is spent or recorded |
 | `/api/payment-check`, `/api/copilot` | server routes that keep the backend API key and model key off the browser |
+| `/api/backend/[...path]` | allow-listed same-origin proxy to the backend for the three screens above; never forwards `POST /decisions` |
 
 ## How a record works
 
