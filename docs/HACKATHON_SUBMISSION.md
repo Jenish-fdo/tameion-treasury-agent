@@ -25,14 +25,21 @@ An AI treasury agent for a small business, settled on Arc in USDC. The owner gra
 - Unaudited, Arc testnet only, never real funds. `docs/security-review.md` and `docs/ARC_TESTNET_DEPLOYMENT.md` section 2a hold the review.
 - The demo API holds the owner and agent keys (testnet only). A public web demo would let a visitor spend the demo agent wallet inside a mandate they create. Keep that wallet small, or do not publish the live link.
 
+## Live deployment and run record (Arc testnet, 2026-10-18)
+
+- `MandateRegistry` [`0x987bf754526d2dAff347f76ed69A9d9bA854deDB`](https://explorer.testnet.arc.io/address/0x987bf754526d2dAff347f76ed69A9d9bA854deDB), block 67716872, source verified.
+- `DecisionLog` [`0x9C740F76f39a90A1D201cdB0b30b323A30aeB64D`](https://explorer.testnet.arc.io/address/0x9C740F76f39a90A1D201cdB0b30b323A30aeB64D), block 67716878, source verified. Deployment cost 0.106 USDC.
+- Demo business `0x52159eba61015c8137e3e3f539b7c807b451ee5b0e29af1942b53fd9ec68f1dd`, mandate `0x0638a966250061fc94115649c81a434c6e8a56c7764ad70c4bb29a1f1893a5be` (per-transaction 5 USDC, daily 20, approval from 3 USDC).
+- Three executed payments of 1, 2 and 1 USDC (4 USDC in total) to three demo vendors: [tx 1](https://explorer.testnet.arc.io/tx/0x5e81440e0720cd4299ed724382c3b3887ca64c1eaf4eca783e7316ebd9ab8bf0), [tx 2](https://explorer.testnet.arc.io/tx/0x0a965fd274958db4c0b5bdcfd1c1ddb74ca189da929b54c6394d44ffdd33de66), [tx 3](https://explorer.testnet.arc.io/tx/0x3ba4582a26b994bd883d9f39946b4291039bcb7bb1dae1b77ba9337c0235d09f). Checked on-chain: vendor 1 holds exactly 1.000000 USDC.
+- Two payments refused by the mandate (over the per-transaction limit; recipient not on the allowlist) and one held for a human (4 USDC at or above the 3 USDC threshold). Six decisions logged; the hash chain links and every hash verifies.
+- The vendors are fixed demo addresses with no owner behind them. This is a demo run of one business created by the builders, not customer traction.
+
 ## Run the demo on Arc testnet (about 10 minutes after the contracts are deployed)
 
-1. Put the deployed addresses and your **testnet-only** keys in `backend/.env` (never commit it): `ARC_NETWORK=testnet`, `MANDATE_REGISTRY_ADDRESS`, `DECISION_LOG_ADDRESS`, `BUSINESS_OWNER_PRIVATE_KEYS` (owner key), `BACKEND_WALLET_PRIVATE_KEY` (relayer key, which doubles as the agent wallet), `API_KEYS` (any 32+ character secret).
-2. Fund both addresses with testnet USDC at <https://faucet.circle.com> (Arc Testnet). The agent wallet needs about 15 USDC; the owner needs a little for gas.
-3. `cd backend && npm run dev`
-4. In another terminal: `API_BASE=http://localhost:3001/api/v1 API_KEY=<your API key> node scripts/demo-run.mjs`
-   It creates a business and a mandate, makes three payments, has two refused (over the limit, unknown recipient) and one held for approval, and prints the explorer links and the log summary.
-5. Open the web app (`cd web-app && npm run dev`), paste the printed business id into the picker, and show Mandates, Decisions (hash-verified, transfer links) and Check a payment (Send USDC).
+1. `./contracts/script/arc-testnet-bootstrap.sh` deploys, creates two fresh testnet-only keys (saved only in the git-ignored `backend/.env.arc-testnet`), funds them from your deployer keystore and runs the read-only checks. Foundry asks for the keystore password itself; the script never sees it.
+2. `./backend/scripts/run-testnet-demo.sh` starts the API on that config, makes three payments, has two refused and one held for approval, prints the explorer links and the log summary, and stops the API it started.
+3. To use your own contracts and keys instead, set `ARC_NETWORK=testnet`, `MANDATE_REGISTRY_ADDRESS`, `DECISION_LOG_ADDRESS`, `BUSINESS_OWNER_PRIVATE_KEYS`, `BACKEND_WALLET_PRIVATE_KEY` and `API_KEYS` in `backend/.env`, fund the agent wallet (about 15 USDC) at <https://faucet.circle.com>, and run `node backend/scripts/demo-run.mjs`.
+4. Open the web app (`cd web-app && npm run dev`), paste the printed business id into the picker, and show Mandates, Decisions (hash-verified, transfer links) and Check a payment (Send USDC).
 
 ## Video outline (under 3 minutes)
 

@@ -2,29 +2,44 @@
 
 > An AI treasury agent for small businesses managing USDC on Arc, with a signed, replayable record of every decision.
 
-**Status: early build on Arc testnet. Not audited, not for real funds.**
+**Status: working prototype on Arc testnet. Not audited, not for real funds.** Built for the Tameion Agents Hackathon (Canteen x Circle).
 
 ## The idea
 
-A business owner grants an AI agent a **scoped mandate**: which vendors it may pay, how much per payment and in total, how long the authority lasts. The agent then pays invoices, keeps a cash reserve, assesses vendor risk and parks idle USDC in yield. Every financial action it takes produces a **signed decision record**, anchored on Arc, that anyone can **replay** to check what the agent saw, which rules it applied and why it acted.
+A business owner grants an AI agent a **mandate**: which categories and recipients it may pay, how much per payment and per day, week and month, when a human must approve, and when the authority expires. The agent pays inside it, in USDC on Arc. Every decision, whether paid, refused or held for a human, is appended to a hash-chained **decision log** that anyone can replay and verify. The contract enforces the mandate; the agent cannot talk its way past it.
 
-Built on [Arc](https://docs.arc.io) (Circle's L1, USDC as the native gas token) and Circle's tooling.
+Built on [Arc](https://docs.arc.io) (Circle's L1, USDC as the native gas token).
+
+## Live on Arc testnet (chain 5042002)
+
+| Contract | Address | Source |
+|---|---|---|
+| MandateRegistry | [`0x987bf754526d2dAff347f76ed69A9d9bA854deDB`](https://explorer.testnet.arc.io/address/0x987bf754526d2dAff347f76ed69A9d9bA854deDB) | verified on the explorer |
+| DecisionLog | [`0x9C740F76f39a90A1D201cdB0b30b323A30aeB64D`](https://explorer.testnet.arc.io/address/0x9C740F76f39a90A1D201cdB0b30b323A30aeB64D) | verified on the explorer |
+
+Neither contract has an owner, admin, pause switch or proxy. Real USDC payments made by the agent through this deployment are listed in [`docs/HACKATHON_SUBMISSION.md`](./docs/HACKATHON_SUBMISSION.md).
 
 ## What works today, and what does not
 
 | Part | State |
 |---|---|
-| Record layer: issue, share and verify signed records anchored by an EIP-712 registry (`contracts/src/CredentialRegistry.sol`) | Works (demo mode needs no chain) |
-| Multi-model payment risk verdict with a quorum and prompt-injection defence (`backend/src/services/aiConsensusService.ts`) | Works against OpenAI-compatible providers you configure |
-| Mandates, decision log, invoices, vendors, treasury agent, Circle wallets, yield | **Not built yet** (Phases 3 to 6 of [`CLEANUP_PLAN.md`](./CLEANUP_PLAN.md)) |
-| Account sign-in | A signed-out placeholder; on-chain issuing from the browser is unavailable until Circle wallets land |
+| `MandateRegistry`: scoped, expiring, revocable mandates; per-signer nonces; spend buckets; human approval by EIP-712 signature (EOA and ERC-1271) | Works. 83 tests. |
+| `DecisionLog`: append-only, per-business hash chain, idempotent client refs, escalation follow-ups | Works. 31 tests. |
+| `POST /mandates/:id/pay`: validate, record the spend, send USDC, log the decision with the transfer hash | Works on Arc testnet. 8 end-to-end tests with real USDC balance changes. |
+| Web app: mandates, decision log (hash-verified, explorer links), check and send a payment | Works. |
+| Credential records (`CredentialRegistry`) and multi-model payment-risk verdict (`aiConsensusService.ts`) | Carried over from the project this started as; works against providers you configure. |
+| Not built: Circle Wallets, Paymaster, USYC yield, CCTP/Gateway, invoice reading, vendor risk, real sign-in | Planned. The demo API holds testnet-only owner and agent keys. |
+
+**Honest limits.** The registry is a policy ledger: it cannot move funds, so the API sends the USDC after the contract authorises it. A compromised agent key could still send USDC without asking the registry; the mandate bounds what an honest agent does and makes every action auditable, it is not custody. Unaudited; see [`docs/security-review.md`](./docs/security-review.md) and section 2a of [`docs/ARC_TESTNET_DEPLOYMENT.md`](./docs/ARC_TESTNET_DEPLOYMENT.md).
+
+**Provenance.** This repository began as a Monad hackathon project (the pre-cleanup state is tagged `monad-metropolis-final`). The treasury product above, the Arc migration and the payment path were built for this event.
 
 ## Repository
 
 ```
-contracts/   Foundry: CredentialRegistry (becomes the mandate and decision registry)
-backend/     Express API: credential mint/verify, multi-model risk verdict
-web-app/     Next.js 14: landing, issue, verify, receipt, dashboard, payment check
+contracts/   Foundry: MandateRegistry, DecisionLog, CredentialRegistry, deploy and verify scripts
+backend/     Express API: businesses, mandates, payments, decisions; credential mint/verify; risk verdict
+web-app/     Next.js 14: mandates, decision log, check and send a payment, credentials
 docs/        Architecture notes, OpenAPI, hosting
 ```
 
