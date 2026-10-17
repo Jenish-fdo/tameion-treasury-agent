@@ -4,14 +4,12 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useCredentialStatus } from '@/hooks/useCredentialStatus';
-import { useCvi } from '@/hooks/useCvi';
 import { useInsight } from '@/hooks/useInsight';
 import { decodePayload, isCredentialId, verifyPath } from '@/lib/dc/credential';
 import { fmtExpiry, fmtUnix } from '@/lib/dc/format';
 import { explorerLinkFor } from './VerifyView';
 import { CopyLinkButton } from './ShareBlock';
 import { StatusBadge } from './StatusBadge';
-import { CviBadge } from './CviBadge';
 import { ActivityList } from './InsightPanel';
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -29,7 +27,6 @@ export function ReceiptView({ id, d }: { id: string; d?: string }) {
   const { isLoading, chain, assessment } = useCredentialStatus((validId ? id : '0x') as `0x${string}`, payload);
 
   const issuerWallet = chain?.issuer ?? payload?.issuer;
-  const cvi = useCvi(validId ? issuerWallet : undefined);
   const { insight } = useInsight((validId ? id : '0x') as `0x${string}`, issuerWallet, Boolean(payload?.demo));
 
   if (!validId) {
@@ -55,13 +52,9 @@ export function ReceiptView({ id, d }: { id: string; d?: string }) {
           <Row label="Title">{payload?.title ?? <span className="text-ink-soft">Not included in this link</span>}</Row>
           <Row label="Recipient">{payload?.recipientName ?? <span className="text-ink-soft">Not included in this link</span>}</Row>
           <Row label="Issuer"><span className="font-mono text-xs">{chain?.issuer ?? payload?.issuer ?? 'Unknown'}</span></Row>
-          <Row label="Issuer identity">
-            {cvi.status ? <><CviBadge state={cvi.status.state} /> <span className="ml-2 text-ink-soft">{cvi.status.detail}</span></> : <span className="text-ink-soft">Not available</span>}
-          </Row>
           <Row label="Recipient wallet"><span className="font-mono text-xs">{chain?.holder ?? payload?.holder ?? 'Unknown'}</span></Row>
           <Row label="Issued"><span className="font-mono text-xs">{issuedSec ? fmtUnix(issuedSec) : 'Unknown'}</span></Row>
           <Row label="Expires"><span className="font-mono text-xs">{fmtExpiry(chain?.expiryTimestamp ?? payload?.expiry ?? 0)}</span></Row>
-          <Row label="Assurance">{insight?.highAssurance ? 'High assurance: issuer and recipient were both CVI-verified at issuance.' : 'Standard: the issuer passed the registry’s checks at issuance.'}</Row>
           <Row label="Verifications recorded"><span className="font-mono text-xs">{insight ? insight.verificationCount : 'Not available'}</span></Row>
           <Row label="Network"><span className="font-mono text-xs">MONAD TESTNET (10143)</span></Row>
           <Row label="Transaction hash"><span className="font-mono text-xs">{payload?.tx ?? 'Not available'}</span></Row>

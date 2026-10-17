@@ -63,25 +63,16 @@ describe('smooth scrolling', () => {
 });
 
 describe('issue flow in demo mode (no registry configured)', () => {
-  const simulateCvi = async () => userEvent.click(await screen.findByRole('button', { name: 'Simulate CVI verification (demo)' }));
-
-  it('issuing is locked until the issuer is CVI-verified, and the demo verification is labelled as simulated', async () => {
+  it('is not gated on any identity check: the button is enabled and no verification step is shown', async () => {
     wrap(<IssueForm />);
-    expect(await screen.findByText('DEMO · NOT VERIFIED')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Issue credential' })).toBeDisabled();
-    expect(screen.getByText('Locked until the issuer is verified (step 0).')).toBeInTheDocument();
-
-    await simulateCvi();
-    expect(await screen.findByText('DEMO · CVI SIMULATED')).toBeInTheDocument();
-    expect(screen.getByText(/No Cleanverse check was made/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Issue credential' })).toBeEnabled();
-    expect(screen.queryByText('CVI VERIFIED')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Step 0/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/CVI|Cleanverse/i)).not.toBeInTheDocument();
   });
 
   it('shows validation errors and sends nothing', async () => {
     wrap(<IssueForm />);
     expect(screen.getByText('Demo mode')).toBeInTheDocument();
-    await simulateCvi();
     await userEvent.click(screen.getByRole('button', { name: 'Issue credential' }));
     expect(await screen.findByText('Enter a credential title.')).toBeInTheDocument();
     expect(screen.getByText(/Enter a full 0x/)).toBeInTheDocument();
@@ -89,7 +80,6 @@ describe('issue flow in demo mode (no registry configured)', () => {
 
   it('issues a labelled DEMO credential with a link and QR, never VERIFIED', async () => {
     wrap(<IssueForm />);
-    await simulateCvi();
     await userEvent.type(screen.getByLabelText('Credential title'), 'Certificate of Completion');
     await userEvent.type(screen.getByLabelText('Recipient name'), 'Alex Chen');
     await userEvent.type(screen.getByLabelText('Recipient wallet address'), '0x70997970C51812dc3A010C7d01b50e0d17dc79C8');
@@ -115,7 +105,6 @@ describe('verify page without a configured registry', () => {
     expect(await screen.findByText('Credential check')).toBeInTheDocument();
     // The on-chain record panel and the receipt step say plainly that this is demo data.
     expect(await screen.findByText('Demo data · this browser only')).toBeInTheDocument();
-    expect(screen.getByText('DEMO · NOT VERIFIED')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Record a demo receipt' }));
     expect(await screen.findByText('Receipt recorded')).toBeInTheDocument();
     expect(await screen.findByText('Verification recorded: not valid')).toBeInTheDocument();

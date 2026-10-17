@@ -29,7 +29,7 @@ export function useInsight(id: Hex, issuer: Address | undefined, demo: boolean):
     queryFn: async (): Promise<CredentialInsight> => {
       if (envioEnabled) return fetchInsight(id, issuer);
       const extras = await readCredentialExtras(id);
-      return { source: 'chain', verificationCount: extras.verificationCount, highAssurance: extras.highAssurance, history: [], issuer: null };
+      return { source: 'chain', verificationCount: extras.verificationCount, history: [], issuer: null };
     },
     enabled: !local,
     retry: 1,

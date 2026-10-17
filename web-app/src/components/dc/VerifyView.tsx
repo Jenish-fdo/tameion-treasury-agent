@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef } from 'react';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { useCredentialStatus } from '@/hooks/useCredentialStatus';
-import { useCvi } from '@/hooks/useCvi';
 import { useInsight } from '@/hooks/useInsight';
 import { buildCopilotContext } from '@/lib/dc/copilot-context';
 import { EXPLORER_URL, explorerAddressUrl } from '@/lib/chain';
@@ -18,7 +17,6 @@ import { StatusSwap } from './motion';
 import { StatusBadge } from './StatusBadge';
 import { CheckList } from './CheckList';
 import { CopilotAskPanel } from './Copilot';
-import { CviLine } from './CviBadge';
 import { InsightPanel } from './InsightPanel';
 import { RecordCheck } from './RecordCheck';
 import { checksFor } from '@/lib/dc/checks';
@@ -44,7 +42,6 @@ export function VerifyView({ id, d }: { id: string; d?: string }) {
   const validId = isCredentialId(id);
   const { isLoading, chain, assessment } = useCredentialStatus((validId ? id : '0x') as `0x${string}`, payload);
   const issuerWallet = chain?.issuer ?? payload?.issuer;
-  const cvi = useCvi(validId ? issuerWallet : undefined);
   const insightQ = useInsight((validId ? id : '0x') as `0x${string}`, issuerWallet, Boolean(payload?.demo));
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -114,9 +111,6 @@ export function VerifyView({ id, d }: { id: string; d?: string }) {
         <section aria-label="Issuer verification" className="dc-sheet mt-6 bg-sheet p-5">
           <h2 className="dc-label">Who issued this</h2>
           <p className="mt-2 break-all font-mono text-xs">{issuerWallet}</p>
-          <div className="mt-3">
-            {cvi.status ? <CviLine status={cvi.status} who="Cleanverse identity (testnet stand-in)" /> : <p role="status" className="text-sm text-ink-soft">Checking the issuer’s CVI verification (demo stand-in)…</p>}
-          </div>
         </section>
       )}
 
@@ -169,7 +163,7 @@ export function VerifyView({ id, d }: { id: string; d?: string }) {
 
       {assessment && (
         <div className="mt-6">
-          <CopilotAskPanel context={buildCopilotContext({ id, payload, chain, assessment, checks, cvi: cvi.status, insight: insightQ.insight })} />
+          <CopilotAskPanel context={buildCopilotContext({ id, payload, chain, assessment, checks, insight: insightQ.insight })} />
         </div>
       )}
 

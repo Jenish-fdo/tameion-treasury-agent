@@ -16,14 +16,11 @@ export interface CopilotCredential {
   issued: string | null;
   expires: string | null;
   transaction: string | null;
-  highAssurance: boolean;
   network: string;
 }
 
 export interface CopilotIssuer {
   address: string | null;
-  cviStatus: string;
-  cviDetail: string;
   /** null when no indexer or demo record is available. */
   record: { issued: number; revoked: number; verificationsRecorded: number; reputationScore: number } | null;
   recordSource: string;

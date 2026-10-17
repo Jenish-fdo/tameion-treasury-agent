@@ -1,11 +1,10 @@
 import type { Address, Hex } from 'viem';
 import { reputationScore, type IssuerStats } from './reputation';
 import { loadIssued } from './store';
-import { demoCvi } from './cvi';
 
 /** One thing that happened to a credential or an issuer, as read from on-chain events. */
 export interface ActivityItem {
-  kind: 'ISSUED' | 'CHECKED' | 'REVOKED' | 'CVI_ATTESTED' | 'CVI_REVOKED';
+  kind: 'ISSUED' | 'CHECKED' | 'REVOKED';
   credentialId?: Hex;
   actor: Address;
   /** For CHECKED: what the registry said at that moment. */
@@ -30,7 +29,6 @@ export interface IssuerRecord extends IssuerStats {
 export interface CredentialInsight {
   source: 'envio' | 'chain' | 'demo';
   verificationCount: number;
-  highAssurance: boolean;
   history: ActivityItem[];
   issuer: IssuerRecord | null;
 }
@@ -39,8 +37,6 @@ export const ACTIVITY_LABEL: Record<ActivityItem['kind'], string> = {
   ISSUED: 'Issued',
   CHECKED: 'Verification recorded',
   REVOKED: 'Revoked',
-  CVI_ATTESTED: 'Issuer CVI attested',
-  CVI_REVOKED: 'Issuer CVI withdrawn',
 };
 
 // --- demo mode: receipts recorded in this browser only -----------------------------------------------------------
@@ -87,12 +83,10 @@ export function demoInsight(id: Hex, issuer: Address | undefined): CredentialIns
     issued: issued.length,
     revoked: 0,
     checks: checks.filter((c) => issuedIds.has(c.id)).length,
-    cviVerified: demoCvi(issuer).state === 'DEMO_VERIFIED',
   };
   return {
     source: 'demo',
     verificationCount: mine.length,
-    highAssurance: false,
     history,
     issuer: issuer ? { address: issuer, ...stats, score: reputationScore(stats) } : null,
   };

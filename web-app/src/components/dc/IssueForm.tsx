@@ -8,8 +8,7 @@ import { getAddress, type Hex } from 'viem';
 import { Loader2 } from 'lucide-react';
 import { useAccount } from '@/components/account';
 import { useCredentialStatus } from '@/hooks/useCredentialStatus';
-import { useCvi } from '@/hooks/useCvi';
-import { cviAllowsIssuing } from '@/lib/dc/cvi';
+import { useIssuerAuthorization } from '@/hooks/useIssuerAuthorization';
 import {
   DEMO_ISSUER, DESCRIPTION_MAX, expiryToUnix, formSchema, hashRecord, idForPayload, randomSalt, receiptPath, typeHash, verifyPath,
   type FormValues, type SharePayload,
@@ -20,7 +19,6 @@ import { saveIssued } from '@/lib/dc/store';
 import { shortenAddress } from '@/lib/utils';
 import { CopilotDraftPanel } from './Copilot';
 import { CredentialCard } from './CredentialCard';
-import { CviLine } from './CviBadge';
 import { PasskeyButton } from './PasskeyButton';
 import { ShareBlock } from './ShareBlock';
 
@@ -30,10 +28,7 @@ const ISSUE_FAILED = 'Could not issue the credential. Nothing was recorded. Chec
 
 export function IssueForm() {
   const { address, isConnected, signer } = useAccount();
-  // In demo mode there may be no account at all; the stand-in issuer is what gets "verified".
-  const issuerWallet = address ?? (isAnchoringEnabled ? undefined : DEMO_ISSUER);
-  const cvi = useCvi(issuerWallet, { withAuthorization: true });
-  const [highAssurance, setHighAssurance] = useState(false);
+  const auth = useIssuerAuthorization(address);
   const [stage, setStage] = useState<Stage>('idle');
   const [error, setError] = useState<string | null>(null);
   const [issued, setIssued] = useState<{ id: Hex; payload: SharePayload } | null>(null);
@@ -68,7 +63,7 @@ export function IssueForm() {
       setStage('confirming');
       // Signed in this tab by the passkey account and sent straight to Monad. No extension, no relayer.
       const hash = await writeRegistry(signer, {
-        functionName: highAssurance ? 'issueHighAssuranceCredential' : 'issueCredential',
+        functionName: 'issueCredential',
         args: [holder, typeHash(record.title), hashRecord(record), BigInt(expiry)],
       });
 
@@ -94,9 +89,7 @@ export function IssueForm() {
 
   const busy = stage === 'wallet' || stage === 'confirming';
   const needsAccount = isAnchoringEnabled && !isConnected;
-  const cviOk = cvi.status ? cviAllowsIssuing(cvi.status.state) : false;
-  const gateOn = cvi.status ? cvi.status.state !== 'GATE_OFF' : true;
-  const blocked = needsAccount || !cviOk || cvi.authorized === false;
+  const blocked = needsAccount || auth.authorized === false;
 
   const fillExample = () => {
     const opts = { shouldValidate: true, shouldDirty: true } as const;
@@ -117,39 +110,19 @@ export function IssueForm() {
         </div>
       )}
 
-      <section aria-label="Issuer verification" className={`rounded border-l-4 border p-4 ${cviOk ? 'border-go bg-go-soft' : 'border-review bg-review-soft'}`}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="dc-label text-ink">Step 0 · Verified issuers only</h2>
-          <span className="rounded border border-line bg-paper-deep px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-soft">
-            Testnet demo stand-in · No real Cleanverse integration
-          </span>
-        </div>
-        {needsAccount ? (
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-            <p className="max-w-md text-sm">Sign in with a passkey. The registry uses a testnet demo stand-in CVI gate to verify issuers (no real Cleanverse integration).</p>
+      {needsAccount && (
+        <section aria-label="Issuer account" className="rounded border border-review bg-review-soft p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-md text-sm">Sign in with a passkey to issue. Only accounts the registry owner has authorised can issue.</p>
             <PasskeyButton />
           </div>
-        ) : cvi.isLoading || !cvi.status ? (
-          <p role="status" className="mt-2 flex items-center gap-2 text-sm">
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> Checking your CVI verification (demo stand-in)…
-          </p>
-        ) : (
-          <div className="mt-2 space-y-3">
-            <CviLine status={cvi.status} who={issuerWallet ? `Issuer ${shortenAddress(issuerWallet)}` : 'Issuer'} />
-            {cvi.simulate && (
-              <button type="button" className="btn-secondary" onClick={() => cvi.simulate?.(cvi.status?.state !== 'DEMO_VERIFIED')}>
-                {cvi.status.state === 'DEMO_VERIFIED' ? 'Remove simulated verification' : 'Simulate CVI verification (demo)'}
-              </button>
-            )}
-            {!cviOk && !cvi.simulate && (
-              <p className="text-sm">Issuing is locked until this wallet is attested on the registry’s CVI demo oracle. Note: this is a testnet demo stand-in and not a real Cleanverse integration.</p>
-            )}
-            {cvi.authorized === false && (
-              <p className="text-sm">This account is also not on the registry’s list of authorised issuers. The registry owner needs to add it.</p>
-            )}
-          </div>
-        )}
-      </section>
+        </section>
+      )}
+      {auth.authorized === false && (
+        <p role="alert" className="rounded border border-review bg-review-soft p-3 text-sm">
+          This account is not on the registry’s list of authorised issuers. The registry owner needs to add it.
+        </p>
+      )}
 
       <CopilotDraftPanel
         onUse={(draft) => {
@@ -180,16 +153,6 @@ export function IssueForm() {
         <input id="expiryDate" type="date" className="input" aria-invalid={!!errors.expiryDate} {...register('expiryDate')} />
       </Field>
 
-      {isAnchoringEnabled && gateOn && (
-        <label className="flex items-start gap-3 rounded border border-line bg-sheet p-3 text-sm">
-          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#3F5BFF]" checked={highAssurance} onChange={(e) => setHighAssurance(e.target.checked)} />
-          <span>
-            <span className="font-semibold">High-assurance credential</span>
-            <span className="block text-ink-soft">Also require the recipient’s wallet to hold a testnet demo stand-in CVI verification. The registry refuses to issue otherwise (not a real Cleanverse check).</span>
-          </span>
-        </label>
-      )}
-
       <p className="text-sm text-ink-soft">
         The title, recipient name and description travel inside the share link. Only a fingerprint of them is written on-chain, so avoid putting sensitive personal data in them.
       </p>
@@ -203,7 +166,7 @@ export function IssueForm() {
         </button>
         {blocked && !busy && (
           <span id="issue-locked" className="text-sm text-ink-soft">
-            {needsAccount ? 'Sign in with a passkey above to issue.' : 'Locked until the issuer is verified (step 0).'}
+            {needsAccount ? 'Sign in with a passkey above to issue.' : 'Locked until this account is an authorised issuer.'}
           </span>
         )}
       </div>

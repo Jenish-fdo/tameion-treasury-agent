@@ -4,14 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import type { Address, Hex } from 'viem';
 import { useAccount } from '@/components/account';
-import { useCvi } from '@/hooks/useCvi';
 import { DEMO_ISSUER } from '@/lib/dc/credential';
 import { envioEnabled, fetchIssuer, fetchRecentActivity } from '@/lib/dc/envio';
 import { demoInsight, type ActivityItem, type IssuerRecord as Record_ } from '@/lib/dc/insight';
 import { isAnchoringEnabled } from '@/lib/dc/registry';
 import { loadIssued } from '@/lib/dc/store';
-import { shortenAddress } from '@/lib/utils';
-import { CviLine } from './CviBadge';
 import { ActivityList } from './InsightPanel';
 import { PasskeyButton } from './PasskeyButton';
 
@@ -26,14 +23,12 @@ function demoRecord(issuer: Address): { record: Record_ | null; activity: Activi
 }
 
 /**
- * The issuer's own standing: Cleanverse verification, activity-based reputation and recent registry
- * events. Reputation and activity come from the Envio indexer; in demo mode they are this browser's
+ * The issuer's own standing: activity-based reputation and recent registry events. Reputation and activity come from the Envio indexer; in demo mode they are this browser's
  * demo data and say so.
  */
 export function IssuerRecord() {
   const { address } = useAccount();
   const issuer = address ?? (isAnchoringEnabled ? undefined : DEMO_ISSUER);
-  const cvi = useCvi(issuer);
   const [demo, setDemo] = useState<ReturnType<typeof demoRecord> | null>(null);
   useEffect(() => {
     if (!isAnchoringEnabled && issuer) setDemo(demoRecord(issuer));
@@ -59,12 +54,11 @@ export function IssuerRecord() {
 
       {!issuer ? (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <p className="max-w-lg text-sm text-ink-soft">Sign in with your passkey to see your Cleanverse verification (testnet stand-in), your reputation score and recent activity on the registry.</p>
+          <p className="max-w-lg text-sm text-ink-soft">Sign in with your passkey to see your reputation score and recent activity on the registry.</p>
           <PasskeyButton />
         </div>
       ) : (
-        <div className="mt-4 grid gap-6 md:grid-cols-[1fr_auto_1.2fr]">
-          <div>{cvi.status ? <CviLine status={cvi.status} who={`Issuer ${shortenAddress(issuer)}`} /> : <p role="status" className="text-sm text-ink-soft">Checking your CVI verification (demo stand-in)…</p>}</div>
+        <div className="mt-4 grid gap-6 md:grid-cols-[auto_1.2fr]">
           <div>
             <p className="dc-label">Reputation score</p>
             {data?.record ? (

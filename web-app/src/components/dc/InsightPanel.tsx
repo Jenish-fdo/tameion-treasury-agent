@@ -90,12 +90,6 @@ export function InsightPanel({ status, insight, isLoading }: { status: Credentia
         </div>
       </dl>
 
-      {insight.highAssurance && (
-        <p className="mt-4 rounded border border-go bg-go-soft p-3 text-sm">
-          <strong>High-assurance credential.</strong> The registry only issued this because both the issuer and the recipient’s wallet held a Cleanverse Verified Identity (testnet demo stand-in) at the time.
-        </p>
-      )}
-
       {issuer && (
         <details className="mt-4 rounded border border-line p-3">
           <summary className="cursor-pointer text-sm font-semibold">How the reputation score is worked out</summary>

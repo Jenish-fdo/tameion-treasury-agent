@@ -14,7 +14,6 @@ const issueInputs = [
 /** The subset of CredentialRegistry this app calls. */
 export const registryAbi = [
   { type: 'function', name: 'issueCredential', stateMutability: 'nonpayable', inputs: issueInputs, outputs: [{ name: 'id', type: 'bytes32' }] },
-  { type: 'function', name: 'issueHighAssuranceCredential', stateMutability: 'nonpayable', inputs: issueInputs, outputs: [{ name: 'id', type: 'bytes32' }] },
   { type: 'function', name: 'recordVerification', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'bytes32' }], outputs: [{ name: 'valid', type: 'bool' }] },
   {
     type: 'function',
@@ -38,31 +37,10 @@ export const registryAbi = [
     ],
   },
   { type: 'function', name: 'isAuthorizedIssuer', stateMutability: 'view', inputs: [{ name: 'issuer', type: 'address' }], outputs: [{ name: '', type: 'bool' }] },
-  { type: 'function', name: 'cviVerifier', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'address' }] },
-  { type: 'function', name: 'isHighAssurance', stateMutability: 'view', inputs: [{ name: 'id', type: 'bytes32' }], outputs: [{ name: '', type: 'bool' }] },
   { type: 'function', name: 'verificationCount', stateMutability: 'view', inputs: [{ name: 'id', type: 'bytes32' }], outputs: [{ name: '', type: 'uint256' }] },
   { type: 'error', name: 'CredentialNotFound', inputs: [{ name: 'id', type: 'bytes32' }] },
   { type: 'error', name: 'CredentialAlreadyExists', inputs: [{ name: 'id', type: 'bytes32' }] },
   { type: 'error', name: 'NotAuthorizedIssuer', inputs: [{ name: 'caller', type: 'address' }] },
-  { type: 'error', name: 'IssuerNotCviVerified', inputs: [{ name: 'issuer', type: 'address' }] },
-  { type: 'error', name: 'HolderNotCviVerified', inputs: [{ name: 'holder', type: 'address' }] },
-  { type: 'error', name: 'CviGateNotConfigured', inputs: [] },
-] as const;
-
-/** ICviVerifier: what the registry's CVI gate asks, and what the UI shows. */
-export const cviVerifierAbi = [
-  {
-    type: 'function',
-    name: 'statusOf',
-    stateMutability: 'view',
-    inputs: [{ name: 'wallet', type: 'address' }],
-    outputs: [
-      { name: 'verified', type: 'bool' },
-      { name: 'tier', type: 'uint8' },
-      { name: 'expiresAt', type: 'uint64' },
-      { name: 'updatedAt', type: 'uint64' },
-    ],
-  },
 ] as const;
 
 export const registryAddress = (REGISTRY_ADDRESS || undefined) as Address | undefined;
@@ -103,51 +81,25 @@ export async function readCredential(id: Hex): Promise<OnChainCredential | null>
   }
 }
 
-// --- Cleanverse CVI gate (testnet demo stand-in) --------------------------------------------------
-
-export interface ChainCvi {
-  /** False when the registry has no CVI verifier set: issuance is not CVI-gated on this deployment. */
-  gateOn: boolean;
-  verified: boolean;
-  tier: number;
-  /** Unix seconds; 0 = no expiry. */
-  expiresAt: number;
-  /** Unix seconds of the last attestation change; 0 = never attested. */
-  updatedAt: number;
-}
-
-/** Reads a wallet's CVI record from whatever verifier the registry's gate points at. */
-export async function readCvi(wallet: Address): Promise<ChainCvi> {
-  if (!registryAddress) throw new Error('registry not configured');
-  const verifier = await publicClient().readContract({ address: registryAddress, abi: registryAbi, functionName: 'cviVerifier' });
-  if (verifier === ZERO_ADDRESS) return { gateOn: false, verified: false, tier: 0, expiresAt: 0, updatedAt: 0 };
-  const [verified, tier, expiresAt, updatedAt] = await publicClient().readContract({ address: verifier, abi: cviVerifierAbi, functionName: 'statusOf', args: [wallet] });
-  return { gateOn: true, verified, tier, expiresAt: Number(expiresAt), updatedAt: Number(updatedAt) };
-}
-
 export async function readIssuerAuthorized(issuer: Address): Promise<boolean> {
   if (!registryAddress) throw new Error('registry not configured');
   return publicClient().readContract({ address: registryAddress, abi: registryAbi, functionName: 'isAuthorizedIssuer', args: [issuer] });
 }
 
 export interface CredentialExtras {
-  highAssurance: boolean;
   verificationCount: number;
 }
 
 export async function readCredentialExtras(id: Hex): Promise<CredentialExtras> {
   if (!registryAddress) throw new Error('registry not configured');
-  const [highAssurance, count] = await Promise.all([
-    publicClient().readContract({ address: registryAddress, abi: registryAbi, functionName: 'isHighAssurance', args: [id] }),
-    publicClient().readContract({ address: registryAddress, abi: registryAbi, functionName: 'verificationCount', args: [id] }),
-  ]);
-  return { highAssurance, verificationCount: Number(count) };
+  const count = await publicClient().readContract({ address: registryAddress, abi: registryAbi, functionName: 'verificationCount', args: [id] });
+  return { verificationCount: Number(count) };
 }
 
 // --- writes, signed in this tab by the passkey account -------------------------------------------------------------
 
 type RegistryWrite =
-  | { functionName: 'issueCredential' | 'issueHighAssuranceCredential'; args: readonly [Address, Hex, Hex, bigint] }
+  | { functionName: 'issueCredential'; args: readonly [Address, Hex, Hex, bigint] }
   | { functionName: 'recordVerification'; args: readonly [Hex] };
 
 /** Sends one registry transaction from the unlocked passkey account and waits for it to be mined. */
@@ -167,9 +119,6 @@ export async function writeRegistry(signer: LocalAccount, call: RegistryWrite): 
 export function writeErrorMessage(e: unknown, fallback: string): string {
   const name = revertName(e);
   const msg = e instanceof Error ? `${e.name} ${e.message}` : String(e);
-  if (name === 'IssuerNotCviVerified' || /IssuerNotCviVerified/.test(msg)) return 'This account does not hold a CVI verification on the testnet demo stand-in oracle, so the registry will not let it issue.';
-  if (name === 'HolderNotCviVerified' || /HolderNotCviVerified/.test(msg)) return 'The recipient’s wallet is not CVI-verified on the testnet stand-in oracle, so a high-assurance credential cannot be issued to it. Untick that option or use a verified recipient.';
-  if (name === 'CviGateNotConfigured' || /CviGateNotConfigured/.test(msg)) return 'This registry has no CVI verifier set, so high-assurance credentials are not available on it.';
   if (name === 'NotAuthorizedIssuer' || /NotAuthorizedIssuer/.test(msg)) return 'This account is not an authorised issuer on the registry. Ask the registry owner to authorise it, then try again.';
   if (name === 'CredentialAlreadyExists' || /CredentialAlreadyExists|already exists/i.test(msg)) return 'An identical credential already exists. Change any detail and try again.';
   if (/insufficient funds|exceeds the balance/i.test(msg)) return 'Your passkey account has no Monad testnet gas. Get testnet MON from the faucet in the account menu and try again.';

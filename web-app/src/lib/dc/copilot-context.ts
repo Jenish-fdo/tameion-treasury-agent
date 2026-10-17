@@ -1,7 +1,6 @@
 import type { Check } from './checks';
 import type { CopilotContext } from './copilot-types';
 import { STATUS_LABEL, type Assessment, type OnChainCredential, type SharePayload } from './credential';
-import { CVI_LABEL, type CviStatus } from './cvi';
 import { fmtExpiry, fmtUnix } from './format';
 import { ACTIVITY_LABEL, type CredentialInsight } from './insight';
 
@@ -15,10 +14,9 @@ export function buildCopilotContext(input: {
   chain: OnChainCredential | null | undefined;
   assessment: Assessment;
   checks: Check[];
-  cvi: CviStatus | null;
   insight: CredentialInsight | null;
 }): CopilotContext {
-  const { id, payload, chain, assessment, checks, cvi, insight } = input;
+  const { id, payload, chain, assessment, checks, insight } = input;
   const issuedSec = chain?.issuedAt ?? payload?.issuedAt ?? 0;
   const record = insight?.issuer;
   return {
@@ -37,13 +35,10 @@ export function buildCopilotContext(input: {
       issued: issuedSec ? fmtUnix(issuedSec) : null,
       expires: fmtExpiry(chain?.expiryTimestamp ?? payload?.expiry ?? 0),
       transaction: payload?.tx ?? null,
-      highAssurance: insight?.highAssurance ?? false,
       network: payload?.demo ? 'none (demo credential, never anchored)' : 'Monad testnet (10143)',
     },
     issuer: {
       address: chain?.issuer ?? payload?.issuer ?? null,
-      cviStatus: cvi ? CVI_LABEL[cvi.state] : 'not available',
-      cviDetail: cvi?.detail ?? 'The issuer’s Cleanverse verification (testnet stand-in) could not be read.',
       record: record ? { issued: record.issued, revoked: record.revoked, verificationsRecorded: record.checks, reputationScore: record.score } : null,
       recordSource: insight ? SOURCE[insight.source] : 'not available',
     },
