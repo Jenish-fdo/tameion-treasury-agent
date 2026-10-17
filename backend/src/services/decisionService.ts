@@ -1,6 +1,7 @@
 import { zeroAddress, zeroHash, type Address, type Hex } from 'viem';
 import { decisionLogAbi } from '../chain/abis/decisionLog.js';
 import { getRelayerAccount, publicClient, requireDecisionLog } from '../chain/clients.js';
+import type { PrivateKeyAccount } from 'viem/accounts';
 import { ACTIONS, OUTCOMES, computeDecisionHash, nullIfZero, type RawDecision } from '../chain/treasury.js';
 import { AppError } from '../middleware/errorHandler.js';
 import type { CreateDecisionBody } from '../schemas/treasury.js';
@@ -67,9 +68,9 @@ function toView(d: RawDecision): DecisionView {
 
 export class DecisionService {
   /** Writes a record through the API's relayer, which the business owner must have authorised as a recorder. */
-  static async record(body: CreateDecisionBody) {
+  static async record(body: CreateDecisionBody, as?: PrivateKeyAccount) {
     const log = requireDecisionLog();
-    const relayer = getRelayerAccount();
+    const relayer = as ?? getRelayerAccount();
     if (!relayer) throw new AppError('No relayer key is configured to record decisions', 503, 'RELAYER_NOT_CONFIGURED');
 
     const input = {

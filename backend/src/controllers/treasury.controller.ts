@@ -1,10 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import {
   businessIdParamSchema, createBusinessSchema, createDecisionSchema, createMandateSchema, decisionIdParamSchema, listDecisionsQuerySchema,
-  listMandatesQuerySchema, mandateIdParamSchema, pendingApprovalsQuerySchema, revokeMandateSchema, validatePaymentSchema,
+  listMandatesQuerySchema, mandateIdParamSchema, payMandateSchema, pendingApprovalsQuerySchema, revokeMandateSchema, validatePaymentSchema,
 } from '../schemas/treasury.js';
 import { DecisionService } from '../services/decisionService.js';
 import { MandateService } from '../services/mandateService.js';
+import { PaymentService } from '../services/paymentService.js';
 
 type Handler = (req: Request, res: Response) => Promise<void>;
 /** Sends any thrown error (including Zod validation errors) to the shared error handler. */
@@ -49,6 +50,12 @@ export const revokeMandateHandler = wrap(async (req, res) => {
 export const validatePaymentHandler = wrap(async (req, res) => {
   const { mandateId } = mandateIdParamSchema.parse(req.params);
   res.json(await MandateService.validate(mandateId, validatePaymentSchema.parse(req.body)));
+});
+
+export const payHandler = wrap(async (req, res) => {
+  const { mandateId } = mandateIdParamSchema.parse(req.params);
+  const result = await PaymentService.pay(mandateId, payMandateSchema.parse(req.body));
+  res.status(result.status === 'pending' ? 202 : 200).json(result);
 });
 
 export const createDecisionHandler = wrap(async (req, res) => {

@@ -56,6 +56,9 @@ const envSchema = z.object({
   // TESTNET DEMO ONLY: comma-separated private keys of business owners the API may act for (create/revoke mandates).
   // Real owners will sign in their own Circle wallet. Never commit these; they come from the runtime environment.
   BUSINESS_OWNER_PRIVATE_KEYS: z.string().default(''),
+  // TESTNET DEMO ONLY: comma-separated private keys of agent wallets the API may pay from. The relayer key also counts
+  // as an agent wallet, so a demo needs only an owner key and a relayer key. Never commit these.
+  AGENT_PRIVATE_KEYS: z.string().default(''),
   TX_CONFIRM_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
 
   // Storage for off-chain credential metadata (the contract only stores a hash)
@@ -103,6 +106,12 @@ for (const k of ownerKeys) {
   if (!r.success) throw new Error('BUSINESS_OWNER_PRIVATE_KEYS contains an invalid private key (value not shown)');
 }
 
+const agentKeys = csv(env.AGENT_PRIVATE_KEYS);
+for (const k of agentKeys) {
+  const r = privateKey.safeParse(k);
+  if (!r.success) throw new Error('AGENT_PRIVATE_KEYS contains an invalid private key (value not shown)');
+}
+
 const MIN_KEY_LENGTH = 24;
 const apiKeys = csv(env.API_KEYS);
 const proKeys = csv(env.PRO_API_KEYS);
@@ -145,6 +154,7 @@ export const config = {
     relayerKey: env.BACKEND_WALLET_PRIVATE_KEY as `0x${string}` | undefined,
     issuerKeys: issuerKeys as `0x${string}`[],
     ownerKeys: ownerKeys as `0x${string}`[],
+    agentKeys: agentKeys as `0x${string}`[],
     txConfirmTimeoutMs: env.TX_CONFIRM_TIMEOUT_MS,
   },
   dataDir: env.DATA_DIR,

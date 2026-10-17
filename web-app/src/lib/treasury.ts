@@ -132,6 +132,19 @@ export interface ValidateResult {
 
 // ---- client for the same-origin proxy ---------------------------------------------------------------------------------
 
+export interface PayResult {
+  status: 'executed' | 'rejected' | 'escalated' | 'pending';
+  reason?: string;
+  paymentId: string;
+  amount?: string;
+  recipient?: string;
+  transferTxHash?: string;
+  consumeTxHash?: string;
+  explorerUrl?: string;
+  decisionId?: string;
+  note?: string;
+}
+
 export class TreasuryApiError extends Error {
   constructor(message: string, public readonly status: number, public readonly code: string, public readonly details?: { field: string; message: string }[]) {
     super(message);

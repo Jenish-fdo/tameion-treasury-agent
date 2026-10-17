@@ -69,6 +69,28 @@ export const validatePaymentSchema = z
   })
   .strict();
 
+/** An agent's request to pay: the API validates it against the mandate, sends the USDC and logs the decision. */
+export const payMandateSchema = z
+  .object({
+    recipient: addressSchema,
+    amount: positiveBaseUnits,
+    category: z.enum(CATEGORY_NAMES),
+    riskTier: riskTier.default(0),
+    riskScore: z.number().int().min(0).max(10_000).default(0),
+    // Unique per payment (replay guard and idempotency key). Generated when omitted.
+    paymentId: refSchema.optional(),
+    // Why the agent decided to pay. Hashed into the decision log; the text itself stays off-chain.
+    rationale: z.string().min(1).max(2000),
+    // The ESCALATED decision this payment resolves (links the executed record to it so it leaves the pending list).
+    escalationId: bytes32Schema.optional(),
+    // Required when the amount reaches the mandate's approval threshold.
+    approval: z
+      .object({ approver: addressSchema, deadline: z.number().int().positive(), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
 export const createDecisionSchema = z
   .object({
     businessId: bytes32Schema,
@@ -116,4 +138,5 @@ export const businessIdParamSchema = z.object({ businessId: bytes32Schema });
 export type CreateBusinessBody = z.infer<typeof createBusinessSchema>;
 export type CreateMandateBody = z.infer<typeof createMandateSchema>;
 export type ValidatePaymentBody = z.infer<typeof validatePaymentSchema>;
+export type PayMandateBody = z.infer<typeof payMandateSchema>;
 export type CreateDecisionBody = z.infer<typeof createDecisionSchema>;

@@ -238,6 +238,48 @@ paths:
         A refusal is a normal 200 answer, not an error.
       responses:
         '200': { description: The verdict }
+  /mandates/{mandateId}/pay:
+    post:
+      tags: [Treasury]
+      summary: Pay under a mandate - validate, record the spend, send the USDC, log the decision (TESTNET DEMO)
+      description: |
+        The API acts as the mandate's agent and must hold that wallet's key (`AGENT_PRIVATE_KEYS`, or the relayer key). Steps: ask the
+        registry whether the mandate allows the payment; if refused, log a `REJECTION`; if the amount reaches the approval threshold and
+        no `approval` is given, log an `ESCALATION` and stop; otherwise `consume` on the registry, send USDC from the agent wallet to the
+        recipient through the USDC contract (`0x3600...0000`, 6 decimals), and log a `PAYMENT` as `EXECUTED` with the transfer's hash.
+        To resolve an escalation, call again with the same `paymentId`, a `PaymentApproval` EIP-712 signature from an approver, and
+        `escalationId`. `rationale` is hashed into the log and kept off-chain. `status` in the 200 body is `executed`, `rejected`,
+        `escalated` or `pending` (202: not confirmed yet). A refusal is a normal answer, not an error. If the transfer fails after the
+        spend was recorded, the response is 502 `TRANSFER_FAILED_AFTER_CONSUME` and the failure is in the log. The registry cannot move
+        funds, so this endpoint is what makes a payment real.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipient, amount, category, rationale]
+              properties:
+                recipient: { type: string }
+                amount: { type: string, description: "USDC base units (6 decimals)" }
+                category: { type: string }
+                riskTier: { type: integer, minimum: 0, maximum: 3, default: 0 }
+                riskScore: { type: integer, minimum: 0, maximum: 10000, default: 0 }
+                paymentId: { type: string, description: "Replay guard and idempotency key; generated when omitted" }
+                rationale: { type: string, maxLength: 2000 }
+                escalationId: { type: string }
+                approval:
+                  type: object
+                  properties:
+                    approver: { type: string }
+                    deadline: { type: integer }
+                    signature: { type: string }
+      responses:
+        '200': { description: "The outcome (`executed`, `rejected`, `escalated`) with the decision record and, when executed, the transfer hash and explorer link" }
+        '202': { description: "Submitted but not confirmed yet" }
+        '403': { description: "The API holds no key for this mandate's agent (`AGENT_NOT_MANAGED`)" }
+        '409': { description: "The agent wallet cannot cover the amount (`INSUFFICIENT_FUNDS`)" }
+        '502': { description: "The spend was recorded but the transfer failed (`TRANSFER_FAILED_AFTER_CONSUME`)" }
   /decisions:
     post:
       tags: [Treasury]

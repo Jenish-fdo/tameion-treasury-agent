@@ -20,7 +20,7 @@ const ALLOWED: { method: 'GET' | 'POST'; path: RegExp }[] = [
   { method: 'GET', path: /^mandates$/ },
   { method: 'GET', path: new RegExp(`^mandates/${ID}$`) },
   { method: 'POST', path: /^mandates$/ },
-  { method: 'POST', path: new RegExp(`^mandates/${ID}/(revoke|validate)$`) },
+  { method: 'POST', path: new RegExp(`^mandates/${ID}/(revoke|validate|pay)$`) },
   { method: 'GET', path: /^decisions$/ },
   { method: 'GET', path: new RegExp(`^decisions/${ID}$`) },
   { method: 'GET', path: /^approvals\/pending$/ },

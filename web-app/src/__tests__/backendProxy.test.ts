@@ -31,7 +31,7 @@ describe('/api/backend proxy: what it allows', () => {
     expect(await res.json()).toEqual({ ok: true });
   });
 
-  it.each([['businesses'], ['mandates'], [`mandates/${ID}/revoke`], [`mandates/${ID}/validate`]])('forwards POST %s', async (path) => {
+  it.each([['businesses'], ['mandates'], [`mandates/${ID}/revoke`], [`mandates/${ID}/validate`], [`mandates/${ID}/pay`]])('forwards POST %s', async (path) => {
     globalThis.fetch = jest.fn().mockResolvedValue(upstream(201, { ok: true })) as unknown as typeof fetch;
     expect((await post(path)).status).toBe(200);
   });

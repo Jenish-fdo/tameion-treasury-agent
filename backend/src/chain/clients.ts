@@ -28,12 +28,20 @@ for (const key of config.chain.ownerKeys) {
   const account = privateKeyToAccount(key);
   ownerAccounts.set(account.address.toLowerCase(), account);
 }
+const agentAccounts = new Map<string, PrivateKeyAccount>();
+for (const key of config.chain.agentKeys) {
+  const account = privateKeyToAccount(key);
+  agentAccounts.set(account.address.toLowerCase(), account);
+}
 const relayerAccount = config.chain.relayerKey ? privateKeyToAccount(config.chain.relayerKey) : undefined;
 
 export const getIssuerAccount = (issuer: Address): PrivateKeyAccount | undefined => issuerAccounts.get(issuer.toLowerCase());
 export const getRelayerAccount = (): PrivateKeyAccount | undefined => relayerAccount;
 /** The managed (testnet demo) business-owner account for `owner`, if the API holds its key. */
 export const getOwnerAccount = (owner: Address): PrivateKeyAccount | undefined => ownerAccounts.get(owner.toLowerCase());
+/** The managed (testnet demo) agent wallet for `agent`: an AGENT_PRIVATE_KEYS key, or the relayer's own key. */
+export const getAgentAccount = (agent: Address): PrivateKeyAccount | undefined =>
+  agentAccounts.get(agent.toLowerCase()) ?? (relayerAccount && relayerAccount.address.toLowerCase() === agent.toLowerCase() ? relayerAccount : undefined);
 export const managedOwners = (): Address[] => [...ownerAccounts.values()].map((a) => a.address);
 export const managedIssuers = (): Address[] => [...issuerAccounts.values()].map((a) => a.address);
 

@@ -365,6 +365,27 @@ describe('Agent: check a payment', () => {
     expect(sent.paymentId).toMatch(/^pay-/);
   });
 
+  it('sends the payment after a successful check and links the transfer on the explorer', async () => {
+    const calls = mockApi({
+      [`POST mandates/${MANDATE_ID}/validate`]: { status: 200, body: result() },
+      [`POST mandates/${MANDATE_ID}/pay`]: { status: 200, body: { status: 'executed', paymentId: 'pay-x', explorerUrl: 'https://explorer.testnet.arc.io/tx/0xabc', decisionId: `0x${'1'.repeat(64)}` } },
+    });
+    wrap(<ValidateView />);
+    await fill({ amount: '100' });
+    await userEvent.click(screen.getByRole('button', { name: 'Check payment' }));
+    await screen.findByRole('status', { name: 'Result' });
+
+    const send = screen.getByRole('button', { name: 'Send USDC' });
+    expect(send).toBeDisabled(); // a reason is required before anything is sent
+    await userEvent.type(screen.getByLabelText(/Why the agent is paying/), 'Invoice 114 matches PO 7');
+    await userEvent.click(send);
+
+    const link = await screen.findByRole('link', { name: /View the transfer on the Arc explorer/ });
+    expect(link).toHaveAttribute('href', 'https://explorer.testnet.arc.io/tx/0xabc');
+    const payCall = calls.find((c) => c.url.includes('/pay'))!;
+    expect(payCall.body).toMatchObject({ recipient: VENDOR, amount: '100000000', category: 'VENDOR_INVOICE', rationale: 'Invoice 114 matches PO 7' });
+  });
+
   it('says plainly when human approval is needed', async () => {
     mockApi({ [`POST mandates/${MANDATE_ID}/validate`]: { status: 200, body: result({ needsApproval: true }) } });
     wrap(<ValidateView />);

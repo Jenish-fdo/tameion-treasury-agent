@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
   createBusinessHandler, createDecisionHandler, createMandateHandler, getBusinessHandler, getDecisionHandler, getMandateHandler,
-  listDecisionsHandler, listMandatesHandler, listOwnersHandler, pendingApprovalsHandler, revokeMandateHandler, validatePaymentHandler,
+  listDecisionsHandler, listMandatesHandler, listOwnersHandler, payHandler, pendingApprovalsHandler, revokeMandateHandler, validatePaymentHandler,
 } from '../controllers/treasury.controller.js';
 
 /** Businesses, mandates, decisions and pending approvals (Arc testnet, unaudited). Mounted behind API-key auth and rate limits. */
@@ -16,6 +16,7 @@ router.get('/mandates', listMandatesHandler);
 router.get('/mandates/:mandateId', getMandateHandler);
 router.post('/mandates/:mandateId/revoke', revokeMandateHandler);
 router.post('/mandates/:mandateId/validate', validatePaymentHandler);
+router.post('/mandates/:mandateId/pay', payHandler); // validate, consume, send USDC, log the decision
 
 router.post('/decisions', createDecisionHandler);
 router.get('/decisions', listDecisionsHandler);

@@ -82,6 +82,14 @@ const REVERTS: Record<string, [status: number, code: string, message: string]> =
   ParentBusinessMismatch: [400, 'PARENT_BUSINESS_MISMATCH', 'The parent decision belongs to a different business'],
   DuplicateClientRef: [409, 'DUPLICATE_CLIENT_REF', 'This clientRef was already recorded for the business'],
   UnknownDecision: [404, 'DECISION_NOT_FOUND', 'No such decision'],
+  // Payments
+  NotMandateAgent: [403, 'NOT_MANDATE_AGENT', 'Only the mandate\'s agent may spend under it'],
+  CheckFailed: [409, 'PAYMENT_NOT_ALLOWED', 'The mandate does not allow this payment'],
+  ApprovalRequired: [409, 'APPROVAL_REQUIRED', 'This payment needs a human approval signature'],
+  ApprovalExpired: [409, 'APPROVAL_EXPIRED', 'The approval signature has expired'],
+  AgentCannotApprove: [400, 'AGENT_CANNOT_APPROVE', 'The agent cannot approve its own payment'],
+  NotApprover: [403, 'NOT_APPROVER', 'The approval was not signed by an authorised approver'],
+  InvalidSignature: [400, 'INVALID_SIGNATURE', 'The approval signature is not valid for this payment'],
 };
 
 /** Turns a contract revert into a client-safe AppError; anything unrecognised becomes an upstream error. */
