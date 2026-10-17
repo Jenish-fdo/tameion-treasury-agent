@@ -7,19 +7,18 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 import {ICredentialRegistry} from "./interfaces/ICredentialRegistry.sol";
-import {ICviVerifier} from "./interfaces/ICviVerifier.sol";
 
 /**
  * @title CredentialRegistry
  * @notice Manages issuance, revocation, and verification of verifiable
- *         credentials on Monad using EIP-712 typed structured data signing.
+ *         credentials on Arc using EIP-712 typed structured data signing.
  *
  * @dev Credential IDs are derived from (issuer, holder, credentialType, dataHash)
  *      ensuring deterministic uniqueness. Issuers must be authorized by the
  *      contract owner. EIP-712 signatures allow gasless credential issuance
  *      where a relayer submits the transaction on behalf of the issuer.
  *
- * @custom:deploy-target Monad testnet (chain ID 10143)
+ * @custom:deploy-target Arc testnet (chain ID 5042002)
  */
 contract CredentialRegistry is
     ICredentialRegistry,
@@ -56,13 +55,6 @@ contract CredentialRegistry is
     /// @notice Total active (non-revoked, non-expired) credentials
     uint256 public activeCredentials;
 
-    /// @notice Cleanverse CVI gate. When set, only CVI-verified issuers can issue.
-    ///         address(0) leaves issuance gated by owner authorization alone.
-    address public override cviVerifier;
-
-    /// @dev credential ID => issued through the high-assurance path
-    mapping(bytes32 => bool) internal _highAssurance;
-
     /// @notice credential ID => number of on-chain verification receipts
     mapping(bytes32 => uint256) public override verificationCount;
 
@@ -93,12 +85,6 @@ contract CredentialRegistry is
     error InvalidHolder();
     error ZeroAddress();
     error InvalidDeadline();
-    /// @dev The issuer does not hold a valid Cleanverse Verified Identity
-    error IssuerNotCviVerified(address issuer);
-    /// @dev The holder does not hold a valid Cleanverse Verified Identity
-    error HolderNotCviVerified(address holder);
-    /// @dev The high-assurance path needs a CVI verifier to be configured
-    error CviGateNotConfigured();
 
     // ──────────────────────────────────────────────────────────────
     // Constructor
@@ -143,7 +129,6 @@ contract CredentialRegistry is
         if (expiryTimestamp != 0 && expiryTimestamp > MAX_EXPIRY) revert InvalidExpiry(expiryTimestamp);
         if (expiryTimestamp != 0 && expiryTimestamp <= block.timestamp) revert InvalidExpiry(expiryTimestamp);
 
-        _requireCviVerifiedIssuer(msg.sender);
         id = _issue(msg.sender, holder, credentialType, dataHash, expiryTimestamp);
     }
 
@@ -183,7 +168,6 @@ contract CredentialRegistry is
 
         if (!_authorizedIssuers[signer]) revert NotAuthorizedIssuer(signer);
 
-        _requireCviVerifiedIssuer(signer);
         id = _issue(signer, request.holder, request.credentialType, request.dataHash, uint64(request.expiryTimestamp));
     }
 
@@ -319,52 +303,6 @@ contract CredentialRegistry is
     // ──────────────────────────────────────────────────────────────
 
     // ═══════════════════════════════════════════════════════════════
-    // Cleanverse CVI gate
-    // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * @inheritdoc ICredentialRegistry
-     *
-     * @dev Owner authorization and CVI verification are independent checks: an issuer needs both
-     *      when a verifier is set. Credentials already issued are unaffected by later changes.
-     */
-    function setCviVerifier(address verifier) external override onlyOwner {
-        cviVerifier = verifier;
-        emit CviVerifierUpdated(verifier);
-    }
-
-    /**
-     * @inheritdoc ICredentialRegistry
-     *
-     * @dev For credentials where it matters that the recipient is a verified person or entity too.
-     *      Unlike {issueCredential}, this path refuses to run without a CVI verifier.
-     */
-    function issueHighAssuranceCredential(
-        address holder,
-        bytes32 credentialType,
-        bytes32 dataHash,
-        uint64 expiryTimestamp
-    ) external override onlyIssuer nonReentrant returns (bytes32 id) {
-        if (holder == address(0)) revert InvalidHolder();
-        if (expiryTimestamp != 0 && expiryTimestamp > MAX_EXPIRY) revert InvalidExpiry(expiryTimestamp);
-        if (expiryTimestamp != 0 && expiryTimestamp <= block.timestamp) revert InvalidExpiry(expiryTimestamp);
-
-        address verifier = cviVerifier;
-        if (verifier == address(0)) revert CviGateNotConfigured();
-        if (!ICviVerifier(verifier).isVerified(msg.sender)) revert IssuerNotCviVerified(msg.sender);
-        if (!ICviVerifier(verifier).isVerified(holder)) revert HolderNotCviVerified(holder);
-
-        id = _issue(msg.sender, holder, credentialType, dataHash, expiryTimestamp);
-        _highAssurance[id] = true;
-        emit HighAssuranceCredentialIssued(id);
-    }
-
-    /// @inheritdoc ICredentialRegistry
-    function isHighAssurance(bytes32 id) external view override returns (bool) {
-        return _highAssurance[id];
-    }
-
-    // ═══════════════════════════════════════════════════════════════
     // Verification receipts
     // ═══════════════════════════════════════════════════════════════
 
@@ -391,14 +329,6 @@ contract CredentialRegistry is
     // ═══════════════════════════════════════════════════════════════
     // Internal
     // ═══════════════════════════════════════════════════════════════
-
-    /// @dev Reverts when a CVI verifier is set and `issuer` does not pass it. No-op when unset.
-    function _requireCviVerifiedIssuer(address issuer) internal view {
-        address verifier = cviVerifier;
-        if (verifier != address(0) && !ICviVerifier(verifier).isVerified(issuer)) {
-            revert IssuerNotCviVerified(issuer);
-        }
-    }
 
     /// @dev Stores a new credential and emits {CredentialIssued}. Callers validate inputs first.
     function _issue(address issuer, address holder, bytes32 credentialType, bytes32 dataHash, uint64 expiryTimestamp)
