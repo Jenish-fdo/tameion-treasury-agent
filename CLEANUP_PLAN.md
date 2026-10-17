@@ -405,3 +405,26 @@ Deviations from the plan above (kept on purpose, to go in Phase 2):
 New facts found along the way:
 - The backend e2e suite had never been run in the repo state I found; it now passes (18/18) against Anvil.
 - `docs/README.md` still links to pages that do not exist; it is rewritten in Phase 2/7.
+
+---
+
+## Phase 2 status (completed 2026-10-17, branch `chore/phase2-dechain`)
+
+Five commits, tests run after each. Arc details were checked against Circle's current docs (`docs.arc.io`) before any code changed.
+
+| Commit | Group | Tests after |
+|---|---|---|
+| `d015704` | contracts: CVI gate, high-assurance path, oracle removed | forge 47 |
+| `dfda5d3` | web: CVI removed; new `useIssuerAuthorization` hook; reputation re-weighted | web 172, build OK |
+| `c7be821` | one Arc config module per app; `MONAD_*` → `ARC_*`; Foundry alias | forge 47, backend 135, e2e 18, web 172 |
+| `d2dbc9a` | Mera removed; signed-out account stub + disabled `AccountButton` | web 174, build OK |
+| (this one) | rebrand copy, READMEs, docs index, hosting, api.yaml | all of the above re-run |
+
+**Arc facts used** (Circle docs, 2026-10-17): testnet chain ID 5042002, RPC `https://rpc.testnet.arc.io`, explorer `https://explorer.testnet.arc.io`, faucet `https://faucet.circle.com`; mainnet exists (chain ID 5042, `https://rpc.mainnet.arc.io`, `https://explorer.arc.io`). USDC `0x3600…0000` on both: native gas token with 18 decimals, ERC-20 interface with 6. The docs moved from `docs.arc.network` / `rpc.testnet.arc.network` to the `arc.io` domains; some third-party pages still show the old hosts.
+
+Things to know:
+- **Breaking env renames, no fallback:** `MONAD_RPC_URL`, `MONAD_CHAIN_ID`, `NEXT_PUBLIC_MONAD_*` and the `monad_testnet` Foundry alias are gone. Local untracked `.env` files that still set them silently fall back to the Arc testnet defaults. Update `.env`, `backend/.env`, `backend/.env.local`, `web-app/.env.local`, `contracts/.env` by hand.
+- **On-chain issuing from the browser is unavailable** until the Phase 5/6 account layer: `useAccount()` is a signed-out stub. Demo mode works.
+- The old Monad deployment (registry `0x335d…5113`) is irrelevant to the new product; deploy a fresh registry on Arc in Phase 3.
+- Kept on purpose: the `@credentia/*` scope, `components/dc/{Copilot,InsightPanel,IssuerRecord,ScrollStory,SmoothScroll}`, Envio client code (`lib/dc/envio.ts`, inert without `NEXT_PUBLIC_ENVIO_URL`), `evidence/CasePanel`. All go or change in Phases 3 to 6.
+- `docs/architecture.md` and `docs/security-review.md` are bannered as historical; findings M-1, M-2, M-7 still apply to `CredentialRegistry` and are Phase 3 work.
