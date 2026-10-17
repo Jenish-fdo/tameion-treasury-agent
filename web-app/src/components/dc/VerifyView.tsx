@@ -67,7 +67,7 @@ export function VerifyView({ id, d }: { id: string; d?: string }) {
     return (
       <Wrap>
         <p role="status" className="flex items-center gap-2 font-semibold">
-          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> Verifying on Monad…
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> Verifying on Arc…
         </p>
         <div className="dc-sheet dc-paper mt-4 animate-pulse p-8 motion-reduce:animate-none" aria-hidden="true">
           <div className="h-3 w-40 bg-paper-deep" /><div className="mt-8 h-9 w-3/4 bg-paper-deep" /><div className="mt-8 h-2 w-full bg-paper-deep" />
@@ -145,11 +145,11 @@ export function VerifyView({ id, d }: { id: string; d?: string }) {
       <div className="mt-6 flex flex-wrap gap-3">
         {explorer ? (
           <a href={explorer} target="_blank" rel="noopener noreferrer" className="btn-primary">
-            Verify on Monad <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="sr-only"> (opens the Monad explorer in a new tab)</span>
+            Verify on Arc <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="sr-only"> (opens the Arc explorer in a new tab)</span>
           </a>
         ) : (
-          <span className="btn-primary pointer-events-none opacity-45" aria-disabled="true">Verify on Monad (not anchored)</span>
+          <span className="btn-primary pointer-events-none opacity-45" aria-disabled="true">Verify on Arc (not anchored)</span>
         )}
         <CopyLinkButton path={path} />
         <Link href={receiptPath(id, payload ?? undefined)} className="btn-secondary">View receipt</Link>

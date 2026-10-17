@@ -12,7 +12,7 @@ import { AccountButton } from './AccountButton';
 
 /**
  * Verifying is free and needs no account. This is the optional last step: leave a receipt of the check
- * on Monad (signed by the verifier's account), which is what the verification count, the
+ * on Arc (signed by the verifier's account), which is what the verification count, the
  * history and the issuer's reputation are built from. Demo credentials record in this browser only.
  */
 export function RecordCheck({ id, demo, receiptHref, onRecorded }: { id: Hex; demo: boolean; receiptHref: string; onRecorded: () => void }) {
@@ -30,7 +30,7 @@ export function RecordCheck({ id, demo, receiptHref, onRecorded }: { id: Hex; de
       else throw new Error('On-chain receipts need an account, and account sign-in is not available yet.');
       setState('done');
       onRecorded();
-      toast.success(local ? 'Demo receipt recorded in this browser' : 'Verification recorded on Monad');
+      toast.success(local ? 'Demo receipt recorded in this browser' : 'Verification recorded on Arc');
     } catch (e) {
       setError(writeErrorMessage(e, 'Could not record the verification. Nothing was written. Try again.'));
       setState('idle');
@@ -56,7 +56,7 @@ export function RecordCheck({ id, demo, receiptHref, onRecorded }: { id: Hex; de
         ) : (
           <button type="button" className="btn-secondary" disabled={state === 'busy'} onClick={() => void record()}>
             {state === 'busy' ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Stamp className="h-3.5 w-3.5" aria-hidden="true" />}
-            {state === 'busy' ? 'Recording your verification…' : local ? 'Record a demo receipt' : 'Record this verification on Monad'}
+            {state === 'busy' ? 'Recording your verification…' : local ? 'Record a demo receipt' : 'Record this verification on Arc'}
           </button>
         )}
       </div>

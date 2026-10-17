@@ -74,7 +74,7 @@ export function DashboardView() {
       </div>
 
       {!isAnchoringEnabled && entries.length > 0 && (
-        <p role="note" className="mt-4 rounded border border-review bg-review-soft p-3 text-sm">Demo mode: no registry is configured, so these credentials are not anchored on Monad.</p>
+        <p role="note" className="mt-4 rounded border border-review bg-review-soft p-3 text-sm">Demo mode: no registry is configured, so these credentials are not anchored on Arc.</p>
       )}
 
       <ul className="mt-6 grid gap-5 sm:grid-cols-2" aria-live="polite">

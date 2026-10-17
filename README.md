@@ -1,131 +1,66 @@
-# Credentia
+# Credentia Treasury Autopsy
 
-> Portable Identity & Trust Layer for AI Agents and Humans on Monad
+> An AI treasury agent for small businesses managing USDC on Arc, with a signed, replayable record of every decision.
 
-Credentia is a decentralized identity and reputation system built on Monad, designed to provide portable, verifiable credentials for both AI agents and human users. It enables trust-based interactions across Web3 applications through on-chain attestations, verifiable credentials, and composable identity primitives.
+**Status: early build on Arc testnet. Not audited, not for real funds.**
 
-## 🌟 Features
+## The idea
 
-- **Portable Identity**: Self-sovereign identity that works across platforms and applications
-- **Trust Layer**: On-chain reputation and attestation system
-- **AI Agent Support**: Purpose-built credentials and trust mechanisms for autonomous AI agents
-- **Monad-Optimized**: Leverages Monad's high-performance L1 for scalable identity operations
-- **Privacy-First**: Zero-knowledge proofs for selective disclosure
-- **Cross-Platform**: Web, mobile, and MetaMask Snap integration
+A business owner grants an AI agent a **scoped mandate**: which vendors it may pay, how much per payment and in total, how long the authority lasts. The agent then pays invoices, keeps a cash reserve, assesses vendor risk and parks idle USDC in yield. Every financial action it takes produces a **signed decision record**, anchored on Arc, that anyone can **replay** to check what the agent saw, which rules it applied and why it acted.
 
-## 📦 Monorepo Structure
+Built on [Arc](https://docs.arc.io) (Circle's L1, USDC as the native gas token) and Circle's tooling.
+
+## What works today, and what does not
+
+| Part | State |
+|---|---|
+| Record layer: issue, share and verify signed records anchored by an EIP-712 registry (`contracts/src/CredentialRegistry.sol`) | Works (demo mode needs no chain) |
+| Multi-model payment risk verdict with a quorum and prompt-injection defence (`backend/src/services/aiConsensusService.ts`) | Works against OpenAI-compatible providers you configure |
+| Mandates, decision log, invoices, vendors, treasury agent, Circle wallets, yield | **Not built yet** (Phases 3 to 6 of [`CLEANUP_PLAN.md`](./CLEANUP_PLAN.md)) |
+| Account sign-in | A signed-out placeholder; on-chain issuing from the browser is unavailable until Circle wallets land |
+
+## Repository
 
 ```
-credentia/
-├── contracts/         # Solidity smart contracts (Foundry)
-├── backend/          # Node.js + Express API server
-├── web-app/          # Next.js 14 web application
-├── mobile-sdk/       # React Native mobile SDK
-├── metamask-snap/    # MetaMask Snap extension
-└── docs/             # Documentation
+contracts/   Foundry: CredentialRegistry (becomes the mandate and decision registry)
+backend/     Express API: credential mint/verify, multi-model risk verdict
+web-app/     Next.js 14: landing, issue, verify, receipt, dashboard, payment check
+docs/        Architecture notes, OpenAPI, hosting
 ```
 
-## 🚀 Quick Start
+## Quick start
 
-### Prerequisites
-
-- Node.js 20+ and pnpm
-- Foundry (for smart contracts)
-- Monad testnet access (Chain ID: 10143)
-
-### Installation
+Prerequisites: Node 20+, pnpm 9.5 (`corepack pnpm@9.5.0 ...` works without installing it), Foundry.
 
 ```bash
-# Install dependencies for all packages
 pnpm install
+cp backend/.env.example backend/.env       # set API_KEYS (openssl rand -hex 32); model keys are optional
+cp web-app/.env.example web-app/.env.local
+pnpm --filter @credentia/backend dev        # http://localhost:3001
+pnpm --filter @credentia/web-app dev        # http://localhost:3000
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# Build all packages
-pnpm build
+pnpm --filter @credentia/web-app test       # web tests
+pnpm --filter @credentia/backend test       # backend tests
+(cd contracts && forge test)                # contract tests
 ```
 
-### Development
+## Arc network
 
-```bash
-# Run all services in development mode
-pnpm dev
+Defaults live in `backend/src/chain/arc.ts` and `web-app/src/lib/arc.ts` and can be overridden with `ARC_*` / `NEXT_PUBLIC_ARC_*` variables.
 
-# Run specific package
-pnpm --filter @credentia/contracts dev
-pnpm --filter @credentia/backend dev
-pnpm --filter @credentia/web-app dev
-```
+| | Testnet | Mainnet |
+|---|---|---|
+| Chain ID | 5042002 | 5042 |
+| RPC | https://rpc.testnet.arc.io | https://rpc.mainnet.arc.io |
+| Explorer | https://explorer.testnet.arc.io | https://explorer.arc.io |
+| Faucet | https://faucet.circle.com | n/a |
 
-## 📚 Package Documentation
+USDC (`0x3600000000000000000000000000000000000000`, same on both) is the native gas token with **18 decimals** as a native balance, and **6 decimals** through its ERC-20 interface. They are the same balance in two units; never show or add them separately.
 
-- **[Contracts](/contracts/README.md)**: Smart contract documentation and deployment guides
-- **[Backend](/backend/README.md)**: API server setup and endpoints
-- **[Web App](/web-app/README.md)**: Next.js application documentation
-- **[Mobile SDK](/mobile-sdk/README.md)**: React Native SDK integration guide
-- **[MetaMask Snap](/metamask-snap/README.md)**: Snap development and installation
-- **[Docs](/docs/README.md)**: Comprehensive project documentation
+## Security
 
-## 🏗️ Architecture
+Report vulnerabilities per [`docs/SECURITY.md`](./docs/SECURITY.md). Real `.env` files are git-ignored; commit only `.env.example`.
 
-Credentia uses a layered architecture:
+## License
 
-1. **Smart Contracts Layer**: Core identity and attestation logic on Monad
-2. **Backend Layer**: API server for indexing, caching, and off-chain operations
-3. **Client Layer**: Web and mobile interfaces for users
-4. **Integration Layer**: MetaMask Snap for wallet-native identity management
-
-## 🧩 Integration layers (credential flow)
-
-The web app's issue → share → verify → receipt flow carries four optional layers:
-a Cleanverse Verified Identity gate (strictly a testnet demo stand-in adapter; no real Cleanverse integration or bounty eligibility is claimed), Mera passkeys as the account layer, an Envio HyperIndex
-indexer (`/indexer`) providing status, history and issuer reputation, and a KIMI copilot helping draft and
-read credentials. Details, limits and stand-in notices are documented in
-[web-app/README.md](./web-app/README.md#integration-layers).
-
-## 🔗 Monad Testnet
-
-- **Chain ID**: 10143
-- **RPC**: Configure in your `.env` file
-- **Explorer**: Link to Monad testnet explorer
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](./docs/CONTRIBUTING.md) for details.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
-
-## 🔐 Security
-
-Please report security vulnerabilities to security@credentia.xyz. See [SECURITY.md](./docs/SECURITY.md) for our security policy.
-
-## 📞 Contact & Community
-
-- **Website**: https://credentia.xyz
-- **Twitter**: @CredentiaXYZ
-- **Discord**: [Join our community](https://discord.gg/credentia)
-- **Documentation**: https://docs.credentia.xyz
-
-## 🗺️ Roadmap
-
-- [x] Core identity contracts
-- [x] Attestation system
-- [ ] ZK credential proofs
-- [ ] AI agent credential standards
-- [ ] Cross-chain identity bridges
-- [ ] Mobile SDK v1
-- [ ] MetaMask Snap integration
-
----
-
-Built with ❤️ for the Monad ecosystem
+MIT, see [`LICENSE`](./LICENSE).

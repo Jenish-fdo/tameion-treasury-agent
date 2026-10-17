@@ -11,7 +11,7 @@ export interface CredentialStatusResult {
   assessment: Assessment | null;
 }
 
-/** Reads the credential from the Monad registry (skipped for demo credentials) and decides what to tell the verifier. */
+/** Reads the credential from the Arc registry (skipped for demo credentials) and decides what to tell the verifier. */
 export function useCredentialStatus(id: Hex, payload: SharePayload | null): CredentialStatusResult {
   const demo = Boolean(payload?.demo);
   const q = useQuery({

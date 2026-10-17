@@ -169,10 +169,10 @@ export interface Assessment {
  */
 export function assess(payload: SharePayload | null, id: string, chain: OnChainCredential | null | undefined, nowSec: number): Assessment {
   if (payload?.demo) {
-    return { status: 'DEMO', detail: 'Demo credential. It was never anchored on Monad, so it cannot be verified.' };
+    return { status: 'DEMO', detail: 'Demo credential. It was never anchored on Arc, so it cannot be verified.' };
   }
   if (chain === undefined) {
-    return { status: 'UNAVAILABLE', detail: 'The Monad registry could not be reached or is not configured, so this credential could not be checked.' };
+    return { status: 'UNAVAILABLE', detail: 'The Arc registry could not be reached or is not configured, so this credential could not be checked.' };
   }
   if (chain === null) {
     return { status: 'NOT_FOUND', detail: 'No credential with this ID exists in the registry.' };
@@ -184,7 +184,7 @@ export function assess(payload: SharePayload | null, id: string, chain: OnChainC
       chain.holder.toLowerCase() === payload.holder.toLowerCase() &&
       chain.issuer.toLowerCase() === payload.issuer.toLowerCase();
     if (!matches) {
-      return { status: 'MISMATCH', detail: 'The details in this link do not match what was recorded on Monad. Do not rely on them.' };
+      return { status: 'MISMATCH', detail: 'The details in this link do not match what was recorded on Arc. Do not rely on them.' };
     }
   }
   if (chain.revoked) return { status: 'REVOKED', detail: 'The issuer has revoked this credential.' };
@@ -192,8 +192,8 @@ export function assess(payload: SharePayload | null, id: string, chain: OnChainC
   return {
     status: 'VERIFIED',
     detail: payload
-      ? 'The details match the record anchored on Monad and the credential is active.'
-      : 'This credential is anchored on Monad and active. The link carries no personal details to compare.',
+      ? 'The details match the record anchored on Arc and the credential is active.'
+      : 'This credential is anchored on Arc and active. The link carries no personal details to compare.',
   };
 }
 

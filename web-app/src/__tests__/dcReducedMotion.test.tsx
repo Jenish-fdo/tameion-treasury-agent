@@ -30,7 +30,7 @@ describe('reduced-motion fallback', () => {
 
   it('keeps the whole landing story readable: all headings and CTAs are present', () => {
     render(<><LandingHero /><HowItWorks /></>);
-    expect(screen.getByRole('heading', { level: 1, name: 'Credentials you can trust.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'A treasury agent you can audit.' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Issue a credential.' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Share the link or QR code.' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Anyone can verify it instantly.' })).toBeInTheDocument();

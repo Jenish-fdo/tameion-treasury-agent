@@ -19,7 +19,7 @@ const FLAG_LABELS: Record<string, string> = {
   PROMPT_INJECTION_SUSPECTED: 'The payment description looks like an attempt to instruct the AI models.',
 };
 
-const DEMO_DISABLED_MESSAGE = 'Payment flow intentionally disabled in this hackathon demo.';
+const DEMO_DISABLED_MESSAGE = 'Payment flow is intentionally disabled in this early build.';
 
 function Stat({ label, value, tip }: { label: string; value: string; tip: { label: string; text: string } | null }) {
   return (

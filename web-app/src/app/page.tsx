@@ -6,7 +6,7 @@ import { SmoothScroll } from '@/components/dc/SmoothScroll';
 
 export const metadata: Metadata = {
   title: 'Credentia — Credentials you can trust',
-  description: 'Issue, share, and verify digital credentials in seconds on Monad testnet. A hackathon demonstration.',
+  description: 'An AI treasury agent for small businesses on Arc. Early build: issue, share and verify signed records on Arc testnet.',
 };
 
 /** Landing page. Static: needs no wallet, API or network to render. */

@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { useCredentialStatus } from '@/hooks/useCredentialStatus';
 import { useInsight } from '@/hooks/useInsight';
 import { decodePayload, isCredentialId, verifyPath } from '@/lib/dc/credential';
+import { ARC_CHAIN_ID, ARC_NETWORK_NAME } from '@/lib/arc';
 import { fmtExpiry, fmtUnix } from '@/lib/dc/format';
 import { explorerLinkFor } from './VerifyView';
 import { CopyLinkButton } from './ShareBlock';
@@ -56,10 +57,10 @@ export function ReceiptView({ id, d }: { id: string; d?: string }) {
           <Row label="Issued"><span className="font-mono text-xs">{issuedSec ? fmtUnix(issuedSec) : 'Unknown'}</span></Row>
           <Row label="Expires"><span className="font-mono text-xs">{fmtExpiry(chain?.expiryTimestamp ?? payload?.expiry ?? 0)}</span></Row>
           <Row label="Verifications recorded"><span className="font-mono text-xs">{insight ? insight.verificationCount : 'Not available'}</span></Row>
-          <Row label="Network"><span className="font-mono text-xs">MONAD TESTNET (10143)</span></Row>
+          <Row label="Network"><span className="font-mono text-xs">{ARC_NETWORK_NAME.toUpperCase()} ({ARC_CHAIN_ID})</span></Row>
           <Row label="Transaction hash"><span className="font-mono text-xs">{payload?.tx ?? 'Not available'}</span></Row>
           <Row label="Explorer">
-            {explorer ? <a href={explorer} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Open on the Monad explorer<span className="sr-only"> (new tab)</span></a> : <span className="text-ink-soft">None: this credential was not anchored on-chain.</span>}
+            {explorer ? <a href={explorer} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Open on the Arc explorer<span className="sr-only"> (new tab)</span></a> : <span className="text-ink-soft">None: this credential was not anchored on-chain.</span>}
           </Row>
         </dl>
       </section>
@@ -84,7 +85,7 @@ export function ReceiptView({ id, d }: { id: string; d?: string }) {
       )}
 
       <p className="mt-4 text-sm text-ink-soft">
-        Credentia is a hackathon demonstration on testnet. This receipt is not a legal document and does not guarantee the credential’s security or the issuer’s trustworthiness.
+        Credentia Treasury Autopsy is an early build on testnet. This receipt is not a legal document and does not guarantee the credential’s security or the issuer’s trustworthiness.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-3">

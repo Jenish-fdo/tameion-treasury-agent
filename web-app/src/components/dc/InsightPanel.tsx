@@ -26,7 +26,7 @@ function ActivityRow({ item }: { item: ActivityItem }) {
         {item.txHash && (
           <a href={`${EXPLORER_URL}/tx/${item.txHash}`} target="_blank" rel="noopener noreferrer" className="ml-2 inline-flex items-center gap-1 underline underline-offset-4">
             tx <ExternalLink className="h-3 w-3" aria-hidden="true" />
-            <span className="sr-only">(opens the Monad explorer in a new tab)</span>
+            <span className="sr-only">(opens the Arc explorer in a new tab)</span>
           </a>
         )}
       </span>

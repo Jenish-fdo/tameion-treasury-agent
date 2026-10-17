@@ -8,9 +8,10 @@ export function LandingHero() {
     <section aria-labelledby="hero-title" className="container grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.05fr_1fr]">
       <div>
         <Reveal>
-          <p className="dc-label">Credentia / Monad testnet</p>
-          <h1 id="hero-title" className="mt-3 font-display text-5xl leading-[1.02] sm:text-6xl lg:text-7xl">Credentials you can trust.</h1>
-          <p className="mt-5 max-w-xl text-lg text-ink-soft">Issue, share, and verify digital credentials in seconds on Monad.</p>
+          <p className="dc-label">Credentia Treasury Autopsy / Arc testnet / early build</p>
+          <h1 id="hero-title" className="mt-3 font-display text-5xl leading-[1.02] sm:text-6xl lg:text-7xl">A treasury agent you can audit.</h1>
+          <p className="mt-5 max-w-xl text-lg text-ink-soft">An AI agent that manages a small business’s USDC on Arc under a scoped mandate, and signs a replayable record of every decision it makes.</p>
+          <p className="mt-3 max-w-xl text-sm text-ink-soft">The agent is not live yet. What works today is the record layer: issue, share and verify signed records on Arc.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/issue" className="btn-primary">Issue a credential</Link>
             <a href="#how-it-works" className="btn-secondary">See how it works</a>
@@ -19,7 +20,7 @@ export function LandingHero() {
       </div>
       <Reveal delay={0.15}>
         <HeroParallax>
-          <CredentialCard title="Certificate of Completion" recipientName="Alex Chen" issuer="Monad Academy" status="VERIFIED" illustrative />
+          <CredentialCard title="Certificate of Completion" recipientName="Alex Chen" issuer="Example Co." status="VERIFIED" illustrative />
         </HeroParallax>
       </Reveal>
     </section>
@@ -34,14 +35,14 @@ export function VerificationSection() {
       <Reveal>
         <p className="dc-label">Instant verification</p>
         <h2 id="verify-title" className="mt-2 font-display text-4xl sm:text-5xl">Trust, verified in one click.</h2>
-        <p className="mt-4 max-w-md text-ink-soft">Credential authenticity and status are easy to check on Monad.</p>
+        <p className="mt-4 max-w-md text-ink-soft">A record’s authenticity and status are checked against the registry on Arc.</p>
         <p className="mt-4 max-w-md text-sm text-ink-soft">If someone edits the details in a link, the check fails and says so. A revoked or expired credential never shows as verified.</p>
       </Reveal>
       <Reveal delay={0.12}>
         <CredentialCard
           title="Certificate of Completion"
           recipientName="Alex Chen"
-          issuer="Monad Academy"
+          issuer="Example Co."
           status="VERIFIED"
           tx="0x9f3ac1d27be84e60b15cd9a02f7e18b34c5d6a90e1b2c3d4e5f60718293a4b5c"
           issuedAt="2026-10-01 09:41 UTC"
@@ -69,7 +70,7 @@ export function FinalCta() {
             Issue credential
           </Link>
           <p className="mt-8 max-w-xl text-sm text-signal-soft">
-            Credentia is a hackathon demonstration. It does not guarantee credential security or production readiness.
+            Credentia Treasury Autopsy is an early build on Arc testnet. It is not audited and not ready for real funds.
           </p>
         </Reveal>
       </div>

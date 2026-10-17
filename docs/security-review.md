@@ -1,3 +1,6 @@
+> **Status (2026-10-17):** written against the Monad-era contract set. `StakingPool` and `TrustScore` no longer exist, so the findings on them (C-1, H-1 to H-6, M-3 to M-6) are historical.
+> Still relevant to the kept `CredentialRegistry`: **M-1** (per-holder nonce, `request.nonce` ignored, no cancel), **M-2** (signed path accepts already-expired credentials), **M-7** (governance hygiene), plus the gas notes and the pre-mainnet checklist. Address them in Phase 3.
+
 # Credentia Contracts — Security & Gas Review
 
 **Scope:** `contracts/src/CredentialRegistry.sol`, `StakingPool.sol`, `TrustScore.sol` (plus their interfaces), as they exist in the working tree on 2026-10-08.

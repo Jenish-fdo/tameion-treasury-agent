@@ -17,7 +17,7 @@ describe('ConsensusResultCard', () => {
     expect(screen.getByText('In plain words:').parentElement).toHaveTextContent('Safe to proceed');
 
     await userEvent.click(continueButton());
-    expect(screen.getByRole('status')).toHaveTextContent('Payment flow intentionally disabled in this hackathon demo.');
+    expect(screen.getByRole('status')).toHaveTextContent('Payment flow is intentionally disabled in this early build.');
   });
 
   it('STOP: red "Payment blocked" and the continue button is disabled', async () => {

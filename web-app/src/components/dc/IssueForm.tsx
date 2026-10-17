@@ -96,7 +96,7 @@ export function IssueForm() {
     setValue('title', 'Certificate of Completion', opts);
     setValue('recipientName', 'Alex Chen', opts);
     setValue('holder', '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', opts);
-    setValue('description', 'Completed the Monad builder workshop.', opts);
+    setValue('description', 'Completed the workshop.', opts);
   };
 
   return (
@@ -106,7 +106,7 @@ export function IssueForm() {
       {!isAnchoringEnabled && (
         <div role="note" className="rounded border border-review bg-review-soft p-3 text-sm">
           <strong className="font-mono text-[11px] uppercase tracking-[0.12em]">Demo mode</strong>
-          <p className="mt-1">No registry address is configured, so credentials made here are not anchored on Monad and will show as DEMO, never as verified.</p>
+          <p className="mt-1">No registry address is configured, so credentials made here are not anchored on Arc and will show as DEMO, never as verified.</p>
         </div>
       )}
 
@@ -216,7 +216,7 @@ function IssuedResult({ id, payload, onReset }: { id: Hex; payload: SharePayload
     <div className="space-y-6">
       <div role="status" className="rounded border border-go bg-go-soft p-3 text-sm">
         <strong>{payload.demo ? 'Demo credential created.' : 'Credential issued.'}</strong>{' '}
-        {payload.demo ? 'It was not sent to Monad.' : 'It is anchored on Monad testnet.'}
+        {payload.demo ? 'It was not sent to Arc.' : 'It is anchored on Arc testnet.'}
       </div>
       <CredentialCard
         title={payload.title}

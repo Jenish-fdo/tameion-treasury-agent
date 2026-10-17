@@ -39,9 +39,9 @@ function ParallaxDrift({ children }: { children: ReactNode }) {
 }
 
 const STEPS = [
-  { n: '01', title: 'Issue a credential.', body: 'Name the credential and the recipient’s wallet. Credentia anchors a fingerprint of it on Monad.' },
+  { n: '01', title: 'Issue a credential.', body: 'Name the credential and the recipient’s wallet. Credentia anchors a fingerprint of it on Arc.' },
   { n: '02', title: 'Share the link or QR code.', body: 'The link carries the details. Send it, print it, or show the QR code.' },
-  { n: '03', title: 'Anyone can verify it instantly.', body: 'Opening the link checks the registry on Monad. No account and no wallet needed.' },
+  { n: '03', title: 'Anyone can verify it instantly.', body: 'Opening the link checks the registry on Arc. No account and no wallet needed.' },
 ] as const;
 
 const DEMO_LINK = 'https://credentia.example/verify/0x4be1…8f10';
@@ -90,10 +90,10 @@ function StoryLayout({ active, reduce = false, progress, outerRef }: { active: n
             </div>
 
             <div className="space-y-4" aria-label="Illustration of one credential moving through the three steps">
-              <CredentialCard title="Certificate of Completion" recipientName="Alex Chen" issuer="Monad Academy" status={status} illustrative issuedAt="2026-10-01 09:41 UTC" />
+              <CredentialCard title="Certificate of Completion" recipientName="Alex Chen" issuer="Example Co." status={status} illustrative issuedAt="2026-10-01 09:41 UTC" />
               <div className="min-h-[148px]">
                 <AnimatePresence mode="wait" initial={false}>
-                  {active === 0 && <Note key="a" label="Step 1">Details entered. Waiting to be anchored on Monad.</Note>}
+                  {active === 0 && <Note key="a" label="Step 1">Details entered. Waiting to be anchored on Arc.</Note>}
                   {active === 1 && (
                     <motion.div key="b" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.4, ease: EASE }} className="dc-sheet flex items-center gap-4 bg-sheet p-4">
                       <div className="border border-line bg-white p-2" role="img" aria-label="Sample QR code"><QRCodeSVG value={DEMO_LINK} size={84} level="M" marginSize={0} /></div>

@@ -3,7 +3,7 @@ import { decodePayload, encodePayload, type SharePayload } from './credential';
 
 /**
  * Issued credentials are remembered in THIS browser only (localStorage). It is a convenience list for the issuer's
- * dashboard, not the source of truth: the registry on Monad and the share link are. Clearing site data removes the list
+ * dashboard, not the source of truth: the registry on Arc and the share link are. Clearing site data removes the list
  * but not the credentials.
  */
 const KEY = 'credentia.issued.v1';

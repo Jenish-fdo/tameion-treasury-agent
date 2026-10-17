@@ -25,7 +25,7 @@ export function DcHeader({ wallet = true }: { wallet?: boolean }) {
         <div className="container flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-3">
           <Link href="/" className="flex flex-col leading-none" aria-label="Credentia home">
             <span className="text-lg font-extrabold tracking-[0.18em]">CREDENTIA</span>
-            <span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">Monad testnet</span>
+            <span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">Treasury Autopsy · Arc testnet</span>
           </Link>
           <nav aria-label="Main" className="order-3 flex w-full gap-5 sm:order-none sm:w-auto">
             {LINKS.map((l) => (
@@ -51,10 +51,10 @@ export function DcFooter() {
     <footer className="mt-16 border-t border-line bg-paper-deep">
       <div className="container py-8">
         <p className="max-w-3xl text-sm text-ink-soft">
-          Credentia is a hackathon demonstration on Monad testnet. It does not guarantee credential security or production readiness, and it has not been
-          professionally audited. A verified status means the details match a record on the registry, not that the issuer is trustworthy.
+          Credentia Treasury Autopsy is an early build on Arc testnet. It is not audited and not ready for real funds. A verified status means the
+          details match a record on the registry, not that the issuer is trustworthy.
         </p>
-        <p className="dc-label mt-3">Credentia / Monad Metropolis hackathon</p>
+        <p className="dc-label mt-3">Credentia Treasury Autopsy</p>
       </div>
     </footer>
   );

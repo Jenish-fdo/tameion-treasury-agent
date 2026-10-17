@@ -9,13 +9,13 @@ const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500', '600'], 
 const body = Manrope({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'Credentia — Verify anyone before you pay them',
+  title: 'Credentia Treasury Autopsy — an AI treasury agent you can audit',
   description:
-    'Credentia is a portable identity and payment-trust layer for humans and AI agents on Monad. It provides explainable AI risk signals before a payment; it does not guarantee transaction safety.',
+    'Credentia Treasury Autopsy is an AI treasury agent for small businesses managing USDC on Arc: scoped mandates, and a signed, replayable decision log for every financial action. Early build on testnet; it does not guarantee transaction safety.',
   authors: [{ name: 'Credentia' }],
   openGraph: {
-    title: 'Credentia — Verify anyone before you pay them',
-    description: 'Explainable payment-risk signals for humans and AI agents on Monad.',
+    title: 'Credentia Treasury Autopsy — an AI treasury agent you can audit',
+    description: 'Scoped mandates and a signed, replayable decision log for every treasury action. USDC on Arc.',
     type: 'website',
   },
 };

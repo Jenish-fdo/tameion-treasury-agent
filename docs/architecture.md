@@ -1,3 +1,7 @@
+> **Status (2026-10-17): historical design, partly superseded.** This describes the original Monad-era plan (identity registry, AUSD staking pool, trust score).
+> `StakingPool`, `TrustScore` and `IdentityRegistry` were removed in Phase 1 of `CLEANUP_PLAN.md`, the CVI gate in Phase 2, and the target chain is now Arc.
+> Only `CredentialRegistry` remains; it becomes the mandate/decision registry in Phase 3. This file is rewritten in Phase 7.
+
 # Credentia — Smart Contract Architecture
 
 > Portable identity and trust layer for AI agents and humans on Monad.

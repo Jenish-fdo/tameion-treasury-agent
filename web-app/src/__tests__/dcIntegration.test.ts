@@ -8,7 +8,7 @@ import type { CopilotContext } from '@/lib/dc/copilot-types';
 import { assess, hashRecord, idForPayload, typeHash, type SharePayload } from '@/lib/dc/credential';
 import { reputationParts, reputationScore } from '@/lib/dc/reputation';
 
-jest.mock('@/lib/arc', () => ({ arcChain: { id: 5042002, rpcUrls: { default: { http: ['http://localhost:0'] } } }, ARC_EXPLORER_URL: 'https://explorer.example' }));
+jest.mock('@/lib/arc', () => ({ arcChain: { id: 5042002, rpcUrls: { default: { http: ['http://localhost:0'] } } }, ARC_EXPLORER_URL: 'https://explorer.example', ARC_NETWORK_NAME: 'Arc Testnet', ARC_CHAIN_ID: 5042002 }));
 
 const NOW = 1_800_000_000;
 
@@ -52,7 +52,7 @@ describe('copilot context', () => {
     expect(c.issuer.record).toEqual({ issued: 4, revoked: 1, verificationsRecorded: 2, reputationScore: 63 });
     expect(c.issuer.recordSource).toMatch(/Envio/);
     expect(c.activity[0]).toMatchObject({ event: 'Verification recorded', result: 'valid' });
-    expect(c.credential.network).toMatch(/Monad testnet/);
+    expect(c.credential.network).toMatch(/Arc Testnet/);
   });
 
   it('a demo credential is described as never anchored', () => {

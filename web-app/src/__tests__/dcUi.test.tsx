@@ -11,7 +11,7 @@ import { VerifyView } from '@/components/dc/VerifyView';
 import { STATUS_LABEL, encodePayload, idForPayload, type CredentialStatus, type SharePayload } from '@/lib/dc/credential';
 
 // No account, chain or network in these tests (the account layer is a signed-out stub).
-jest.mock('@/lib/arc', () => ({ arcChain: { id: 5042002, rpcUrls: { default: { http: ['http://localhost:0'] } } }, ARC_EXPLORER_URL: 'https://explorer.example', FAUCET_URL: 'https://faucet.example' }));
+jest.mock('@/lib/arc', () => ({ arcChain: { id: 5042002, rpcUrls: { default: { http: ['http://localhost:0'] } } }, ARC_EXPLORER_URL: 'https://explorer.example', ARC_NETWORK_NAME: 'Arc Testnet', ARC_CHAIN_ID: 5042002, FAUCET_URL: 'https://faucet.example' }));
 const mockLenis = jest.fn(() => ({ destroy: jest.fn() }));
 jest.mock('lenis', () => ({ __esModule: true, default: function Lenis() { return mockLenis(); } }));
 
@@ -39,14 +39,15 @@ describe('StatusBadge', () => {
 describe('landing page content', () => {
   it('has the required copy, CTAs and the illustrative-data label', () => {
     render(<><LandingHero /><HowItWorks /><VerificationSection /><FinalCta /></>);
-    expect(screen.getByRole('heading', { level: 1, name: 'Credentials you can trust.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'A treasury agent you can audit.' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Issue a credential' })).toHaveAttribute('href', '/issue');
     expect(screen.getByRole('link', { name: 'See how it works' })).toHaveAttribute('href', '#how-it-works');
     expect(screen.getByText('Three simple steps.')).toBeInTheDocument();
     expect(screen.getByText('Trust, verified in one click.')).toBeInTheDocument();
     expect(screen.getAllByText('Illustrative demo data').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByRole('link', { name: 'Issue credential' })).toHaveAttribute('href', '/issue');
-    expect(screen.getByText(/does not guarantee credential security or production readiness/)).toBeInTheDocument();
+    expect(screen.getByText(/early build on Arc testnet\. It is not audited and not ready for real funds/)).toBeInTheDocument();
+    expect(screen.getByText(/The agent is not live yet/)).toBeInTheDocument();
   });
 });
 
@@ -85,7 +86,7 @@ describe('issue flow in demo mode (no registry configured)', () => {
     await userEvent.type(screen.getByLabelText('Recipient wallet address'), '0x70997970C51812dc3A010C7d01b50e0d17dc79C8');
     await userEvent.click(screen.getByRole('button', { name: 'Issue credential' }));
     expect(await screen.findByText('Demo credential created.')).toBeInTheDocument();
-    expect(screen.getByText('It was not sent to Monad.')).toBeInTheDocument();
+    expect(screen.getByText('It was not sent to Arc.')).toBeInTheDocument();
     expect(screen.getAllByText('DEMO · NOT ANCHORED').length).toBeGreaterThan(0);
     expect(screen.queryByText('VERIFIED')).not.toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'QR code for the verification link' })).toBeInTheDocument();

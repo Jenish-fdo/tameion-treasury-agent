@@ -1,3 +1,4 @@
+import { ARC_CHAIN_ID, ARC_NETWORK_NAME } from '@/lib/arc';
 import type { Check } from './checks';
 import type { CopilotContext } from './copilot-types';
 import { STATUS_LABEL, type Assessment, type OnChainCredential, type SharePayload } from './credential';
@@ -35,7 +36,7 @@ export function buildCopilotContext(input: {
       issued: issuedSec ? fmtUnix(issuedSec) : null,
       expires: fmtExpiry(chain?.expiryTimestamp ?? payload?.expiry ?? 0),
       transaction: payload?.tx ?? null,
-      network: payload?.demo ? 'none (demo credential, never anchored)' : 'Monad testnet (10143)',
+      network: payload?.demo ? 'none (demo credential, never anchored)' : `${ARC_NETWORK_NAME} (${ARC_CHAIN_ID})`,
     },
     issuer: {
       address: chain?.issuer ?? payload?.issuer ?? null,

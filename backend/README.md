@@ -1,269 +1,56 @@
-# Credentia Backend
+# Credentia backend
 
-Node.js + Express + TypeScript API server for Credentia identity platform.
+Express + TypeScript API for Credentia Treasury Autopsy. Early build: it currently serves credential minting and verification against the on-chain registry, and a multi-model payment risk verdict.
 
-## 📋 Overview
-
-The backend provides REST APIs for:
-- Identity management and resolution
-- Attestation creation and verification
-- Credential issuance and validation
-- Trust score computation
-- AI agent identity services
-- Blockchain indexing and caching
-
-## 🏗️ Architecture
-
-### Tech Stack
-
-- **Runtime**: Node.js 20+
-- **Framework**: Express.js
-- **Language**: TypeScript
-- **Database**: PostgreSQL with Prisma ORM
-- **Cache**: Redis
-- **Blockchain**: viem for Monad interaction
-- **Validation**: Zod
-- **Authentication**: JWT
-
-### Project Structure
-
-```
-backend/
-├── src/
-│   ├── config/          # Configuration files
-│   ├── controllers/     # Request handlers
-│   ├── middleware/      # Express middleware
-│   ├── models/          # Database models
-│   ├── routes/          # API routes
-│   ├── services/        # Business logic
-│   ├── types/           # TypeScript types
-│   ├── utils/           # Helper functions
-│   └── index.ts         # Application entry point
-├── prisma/
-│   └── schema.prisma    # Database schema
-└── tests/               # Test files
-```
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- PostgreSQL 15+
-- Redis 7+
-- pnpm
-
-### Installation
+## Run
 
 ```bash
-# Install dependencies
-pnpm install
-
-# Copy environment file
-cp .env.example .env
-# Edit .env with your configuration
-
-# Generate Prisma client
-pnpm db:generate
-
-# Run database migrations
-pnpm db:migrate
-
-# Seed database (optional)
-pnpm db:seed
+cp .env.example .env     # API_KEYS is required and has no default: openssl rand -hex 32
+pnpm dev                 # http://localhost:3001, API under /api/v1
+pnpm test                # unit and integration tests (no network)
+pnpm test:e2e            # needs a local chain, see below
+pnpm typecheck
 ```
 
-### Development
+## Endpoints (`/api/v1`)
+
+| Method and path | Auth | Purpose |
+|---|---|---|
+| `GET /health` | none | liveness |
+| `POST /credential/mint` | API key | sign a credential as a managed issuer and submit `issueCredentialWithSig` through the relayer |
+| `GET /credential/:credentialId/verify` | API key | read a credential's validity from the registry |
+| `POST /intent/evaluate` | API key | ask the configured models whether a payment should proceed (`GO` / `STOP` / `REVIEW`) |
+
+The full contract is `docs/api.yaml`. Auth is an API key in `X-API-Key` or `Authorization: Bearer`; the server refuses to start without keys. Rate limits are per key, with a much lower hourly limit on `/intent/evaluate` because it calls paid models.
+
+## Configuration
+
+See `.env.example`. Notable variables:
+
+- `ARC_NETWORK` (`testnet` default or `mainnet`) selects the default RPC, chain ID and explorer; `ARC_RPC_URL`, `ARC_CHAIN_ID`, `ARC_EXPLORER_URL` override them (for example for a local node).
+- `CREDENTIAL_REGISTRY_ADDRESS`, `ISSUER_PRIVATE_KEYS`, `BACKEND_WALLET_PRIVATE_KEY`: the registry and the keys used to sign and pay for minting. Keep the keys secret; they are being replaced by Circle wallets.
+- `KIMI_*`, `QWEN_*`, `JEV_*`: three OpenAI-compatible model endpoints. A model without a key reports `not_configured`; at least two must answer for a verdict.
+- `DATA_DIR`: where off-chain credential metadata is stored (a JSON file for now).
+
+## End-to-end tests
+
+They run against a local Anvil chain using Arc's testnet chain ID and a freshly deployed registry:
 
 ```bash
-# Start development server with hot reload
-pnpm dev
-
-# Run in production mode
-pnpm build
-pnpm start
+anvil --chain-id 5042002 &
+./scripts/deploy-local.sh      # writes backend/.env.local with Anvil's public test keys
+pnpm test:e2e
 ```
 
-The server will start on `http://localhost:3001`
+`deploy-local.sh` overwrites `backend/.env.local`; back it up first if it holds anything you want to keep.
 
-## 📚 API Documentation
-
-### Base URL
+## Layout
 
 ```
-http://localhost:3001/api/v1
+src/chain/        Arc constants, viem clients, ABIs
+src/config/       zod-validated environment, model configuration
+src/services/     credentialService, aiConsensusService, intentService
+src/store/        credential metadata store (file-backed)
+src/middleware/   auth, rate limits, errors, request logging
+src/prompts/      the payment-risk system prompt
 ```
-
-### Authentication
-
-Most endpoints require JWT authentication. Include the token in the Authorization header:
-
-```
-Authorization: Bearer <your_jwt_token>
-```
-
-### Endpoints
-
-#### Identity Management
-
-- `POST /api/v1/identities` - Register new identity
-- `GET /api/v1/identities/:did` - Get identity by DID
-- `PUT /api/v1/identities/:did` - Update identity
-- `DELETE /api/v1/identities/:did` - Deactivate identity
-- `GET /api/v1/identities/address/:address` - Get identity by address
-
-#### Attestations
-
-- `POST /api/v1/attestations` - Create attestation
-- `GET /api/v1/attestations/:id` - Get attestation by ID
-- `GET /api/v1/attestations/did/:did` - Get attestations for DID
-- `POST /api/v1/attestations/:id/verify` - Verify attestation
-
-#### Credentials
-
-- `POST /api/v1/credentials/issue` - Issue credential
-- `GET /api/v1/credentials/:id` - Get credential
-- `POST /api/v1/credentials/verify` - Verify credential
-- `GET /api/v1/credentials/holder/:did` - Get credentials for holder
-
-#### AI Agents
-
-- `POST /api/v1/ai-agents` - Register AI agent
-- `GET /api/v1/ai-agents/:did` - Get AI agent details
-- `PUT /api/v1/ai-agents/:did/capabilities` - Update capabilities
-- `GET /api/v1/ai-agents/:did/trust-score` - Get trust score
-
-#### Health & Status
-
-- `GET /api/v1/health` - Health check
-- `GET /api/v1/status` - Service status
-
-## 🔧 Configuration
-
-### Environment Variables
-
-See `.env.example` for all available configuration options.
-
-Key variables:
-- `NODE_ENV`: Environment (development, production, test)
-- `PORT`: Server port
-- `DATABASE_URL`: PostgreSQL connection string
-- `REDIS_URL`: Redis connection string
-- `MONAD_RPC_URL`: Monad RPC endpoint
-- `JWT_SECRET`: Secret for JWT signing
-
-### Database
-
-We use Prisma as the ORM. Schema is defined in `prisma/schema.prisma`.
-
-```bash
-# Create migration
-pnpm db:migrate
-
-# Generate Prisma client
-pnpm db:generate
-
-# Open Prisma Studio
-pnpm db:studio
-```
-
-### Redis Cache
-
-Redis is used for:
-- Session management
-- API response caching
-- Rate limiting
-- Job queues
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-pnpm test
-
-# Run tests in watch mode
-pnpm test:watch
-
-# Generate coverage report
-pnpm test:coverage
-```
-
-## 🔐 Security
-
-### Authentication & Authorization
-
-- JWT-based authentication
-- Role-based access control (RBAC)
-- API key authentication for service-to-service
-
-### Rate Limiting
-
-API rate limits:
-- 100 requests per 15 minutes per IP (general)
-- 10 requests per minute for write operations
-- 1000 requests per hour for authenticated users
-
-### Data Protection
-
-- All passwords hashed with bcrypt
-- Sensitive data encrypted at rest
-- HTTPS enforced in production
-- CORS configured for trusted origins
-
-## 📊 Monitoring
-
-### Logging
-
-- Winston for structured logging
-- Log levels: error, warn, info, debug
-- Logs stored in `logs/` directory
-
-### Metrics
-
-- Request/response times
-- Error rates
-- Database query performance
-- Cache hit rates
-
-## 🚀 Deployment
-
-### Production Build
-
-```bash
-# Build TypeScript
-pnpm build
-
-# Start production server
-NODE_ENV=production pnpm start
-```
-
-### Docker
-
-```bash
-# Build image
-docker build -t credentia-backend .
-
-# Run container
-docker run -p 3001:3001 --env-file .env credentia-backend
-```
-
-### Environment Setup
-
-1. Set `NODE_ENV=production`
-2. Configure production database
-3. Set secure `JWT_SECRET`
-4. Configure CORS for production domain
-5. Enable rate limiting
-6. Set up monitoring/logging
-
-## 🤝 Contributing
-
-1. Follow TypeScript best practices
-2. Write tests for new features
-3. Use conventional commits
-4. Update API documentation
-5. Run linter before committing: `pnpm lint`
-
-## 📄 License
-
-MIT License - see [LICENSE](../LICENSE) for details

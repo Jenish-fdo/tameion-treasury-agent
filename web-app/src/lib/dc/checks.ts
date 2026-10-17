@@ -16,7 +16,7 @@ export function checksFor(a: Assessment, hasPayload: boolean): Check[] {
     {
       label: 'Registry checked',
       state: s === 'DEMO' ? 'skip' : onChain ? 'pass' : 'fail',
-      note: s === 'DEMO' ? 'Demo credential: nothing on-chain to check.' : s === 'UNAVAILABLE' ? 'The registry could not be reached.' : s === 'NOT_FOUND' ? 'No record with this ID.' : 'Record found on Monad.',
+      note: s === 'DEMO' ? 'Demo credential: nothing on-chain to check.' : s === 'UNAVAILABLE' ? 'The registry could not be reached.' : s === 'NOT_FOUND' ? 'No record with this ID.' : 'Record found on Arc.',
     },
     {
       label: 'Details match',

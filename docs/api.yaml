@@ -3,8 +3,9 @@ info:
   title: Credentia API
   version: 1.0.0
   description: |
-    REST API for issuing and verifying on-chain credentials (CredentialRegistry on Monad), reading
-    trust scores (TrustScore), and getting an AI consensus verdict on a proposed agent payment.
+    REST API for issuing and verifying on-chain credentials (CredentialRegistry on Arc) and getting an
+    AI consensus verdict on a proposed payment. Being reshaped into the Treasury Autopsy API
+    (mandates, decisions, invoices, vendors); see CLEANUP_PLAN.md.
 
     **Authentication.** Send an API key in the `X-API-Key` header or as `Authorization: Bearer <key>`.
     Keys are never accepted in query strings. Keys are configured server-side via `API_KEYS`
@@ -23,9 +24,7 @@ security:
   - BearerAuth: []
 tags:
   - name: Credentials
-  - name: Trust
   - name: Intent
-  - name: Agents
 
 paths:
   /credential/mint:
@@ -108,37 +107,12 @@ paths:
         '502': { $ref: '#/components/responses/UpstreamChain' }
         '503': { $ref: '#/components/responses/NotConfigured' }
 
-  /trust-score/{address}:
-    get:
-      tags: [Trust]
-      summary: Get an address's trust score
-      description: |
-        Reads the TrustScore contract. Scores are stored in basis points (0-10000) and returned both
-        raw (`scoreBps`) and as 0-100 points. The breakdown has the contract's three weighted factors.
-      parameters:
-        - name: address
-          in: path
-          required: true
-          schema: { $ref: '#/components/schemas/Address' }
-      responses:
-        '200':
-          description: 'Trust score. An address that was never scored returns 0 and lastUpdated 0.'
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/TrustScore' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '429': { $ref: '#/components/responses/RateLimited' }
-        '500': { $ref: '#/components/responses/Internal' }
-        '502': { $ref: '#/components/responses/UpstreamChain' }
-        '503': { $ref: '#/components/responses/NotConfigured' }
-
   /intent/evaluate:
     post:
       tags: [Intent]
       summary: Evaluate a payment intent with AI consensus
       description: |
-        Sends the proposed payment (plus both parties' on-chain trust scores) to Kimi, Qwen and Jev in
+        Sends the proposed payment to Kimi, Qwen and Jev in
         parallel; each returns GO or STOP with a 0-100 confidence. Full design: `docs/ai-consensus-architecture.md`.
 
         **Only `GO` means proceed.** Treat `STOP`, `REVIEW`, `503` and any error as "do not pay automatically".
@@ -191,32 +165,6 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
-
-  /agent/{address}/credentials:
-    get:
-      tags: [Agents]
-      summary: List an agent's active credentials
-      description: |
-        Credentials issued **through this API** to the address that are currently valid on-chain
-        (not revoked, not expired), plus the address's trust score (0-100, or `null` if no TrustScore
-        contract is configured). Credentials minted directly on-chain are not included because the
-        registry has no per-holder index.
-      parameters:
-        - name: address
-          in: path
-          required: true
-          schema: { $ref: '#/components/schemas/Address' }
-      responses:
-        '200':
-          description: Active credentials (possibly empty).
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AgentCredentials' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '429': { $ref: '#/components/responses/RateLimited' }
-        '500': { $ref: '#/components/responses/Internal' }
-        '502': { $ref: '#/components/responses/UpstreamChain' }
 
   /health:
     get:
@@ -318,35 +266,6 @@ components:
         expiresAt: { type: integer }
         dataHash: { $ref: '#/components/schemas/Bytes32' }
         metadataUri: { type: string, nullable: true }
-    AgentCredentials:
-      type: object
-      required: [credentials, trustScore]
-      properties:
-        credentials:
-          type: array
-          items: { $ref: '#/components/schemas/Credential' }
-        trustScore: { type: number, nullable: true, minimum: 0, maximum: 100 }
-
-    TrustFactor:
-      type: object
-      properties:
-        points: { type: number, description: 0-100 }
-        weightBps: { type: integer, description: Factor weight in basis points (weights sum to 10000). }
-    TrustScore:
-      type: object
-      required: [address, score, scoreBps, breakdown, lastUpdated]
-      properties:
-        address: { $ref: '#/components/schemas/Address' }
-        score: { type: number, minimum: 0, maximum: 100 }
-        scoreBps: { type: integer, minimum: 0, maximum: 10000 }
-        breakdown:
-          type: object
-          properties:
-            credentials: { $ref: '#/components/schemas/TrustFactor' }
-            attestations: { $ref: '#/components/schemas/TrustFactor' }
-            staking: { $ref: '#/components/schemas/TrustFactor' }
-        lastUpdated: { type: integer, description: Unix seconds; 0 if never scored. }
-
     IntentRequest:
       type: object
       additionalProperties: false

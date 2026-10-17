@@ -23,7 +23,7 @@ export interface CredentialCardProps {
 const short = (v: string) => (v.length > 14 ? `${v.slice(0, 8)}…${v.slice(-6)}` : v);
 
 /** The product's signature visual: a credential as a sheet of paper with a cobalt verification line. */
-export function CredentialCard({ title, recipientName, issuer, status, network = 'MONAD TESTNET', id, tx, issuedAt, expiry, illustrative, className }: CredentialCardProps) {
+export function CredentialCard({ title, recipientName, issuer, status, network = 'ARC TESTNET', id, tx, issuedAt, expiry, illustrative, className }: CredentialCardProps) {
   return (
     <article aria-label={`Credential: ${title}`} className={cn('dc-paper dc-sheet relative p-6 sm:p-8', className)}>
       <div className="flex items-start justify-between gap-4">

@@ -19,7 +19,7 @@ jest.mock('@/lib/dc/registry', () => ({
   writeRegistry: jest.fn(),
   writeErrorMessage: (_e: unknown, fallback: string) => fallback,
 }));
-jest.mock('@/lib/arc', () => ({ arcChain: { id: 5042002 }, ARC_EXPLORER_URL: 'https://explorer.example', FAUCET_URL: 'https://faucet.example' }));
+jest.mock('@/lib/arc', () => ({ arcChain: { id: 5042002 }, ARC_EXPLORER_URL: 'https://explorer.example', ARC_NETWORK_NAME: 'Arc Testnet', ARC_CHAIN_ID: 5042002, FAUCET_URL: 'https://faucet.example' }));
 
 const TX = `0x${'cd'.repeat(32)}` as const;
 const payload: SharePayload = {
@@ -48,7 +48,7 @@ describe('verify page, registry configured', () => {
     mockRead.mockResolvedValue(chain());
     view();
     expect((await screen.findAllByText('VERIFIED')).length).toBeGreaterThan(0);
-    expect(screen.getByRole('link', { name: /Verify on Monad/ })).toHaveAttribute('href', expect.stringMatching(new RegExp(`/tx/${TX}$`)));
+    expect(screen.getByRole('link', { name: /Verify on Arc/ })).toHaveAttribute('href', expect.stringMatching(new RegExp(`/tx/${TX}$`)));
     expect(screen.getByText('Credential verified')).toBeInTheDocument();
     expect(screen.getAllByText(TX).length).toBeGreaterThan(0);
   });
