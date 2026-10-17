@@ -40,7 +40,7 @@ Rehearsed locally on 2026-10-17, not on Arc: the whole sequence below (throwaway
   cd ../web-app && ./node_modules/.bin/jest       # 252 passed
   ```
 - [ ] **A2. Pin the compiler** (decision 4), rebuild, re-run A1. Note the commit hash: it goes into the deployment record.
-- [ ] **A3. Install Arc Foundry** (after your yes). This machine is Apple Silicon (arm64), which has a prebuilt binary. Download into a **new, empty folder** (not the repo, not `~/.local/bin`) both the archive and its `.sha256` file from the `circlefin/arc-foundry` release, then verify **before** extracting:
+- [x] **A3. Install Arc Foundry** (done 2026-10-17; record below). This machine is Apple Silicon (arm64), which has a prebuilt binary. Download into a **new, empty folder** (not the repo, not `~/.local/bin`) both the archive and its `.sha256` file from the `circlefin/arc-foundry` release, then verify **before** extracting:
   ```bash
   cd "$(mktemp -d)"                       # a fresh folder just for this download
   # download arc-foundry-<version>-<target>.tar.gz and arc-foundry-<version>-<target>.tar.gz.sha256 here
@@ -52,6 +52,7 @@ Rehearsed locally on 2026-10-17, not on Arc: the whole sequence below (throwaway
   ```
   **macOS prerequisite found during the install on 2026-10-17:** the release `v0.8.0-2` binaries are linked against Homebrew's `libusb` (hardware-wallet support) at `/opt/homebrew/opt/libusb/lib/libusb-1.0.0.dylib`. Without it every `arc-*` command fails at start-up with `dyld: Library not loaded`. Install it first with `brew install libusb` (or `HOMEBREW_NO_AUTO_UPDATE=1 brew install libusb` to leave your other formulae alone). Upstream `forge` does not need it.
   The binaries are renamed `arc-*`, so they do not replace your upstream `forge`. Arc Foundry is **not** installable through `foundryup`. Do not run the extracted binaries from inside the downloaded folder. If `~/.local/bin` is not on your `PATH`, add `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshrc` yourself; nothing edits it for you. Arc Foundry ships `forge`, `cast`, `anvil` and `chisel`; `chisel` does not work on Arc and is not needed.
+  **A3 install record (2026-10-17).** Release `v0.8.0-2`, archive `arc-foundry-v0.8.0-2-aarch64-apple-darwin.tar.gz`, sha256 `90e3eefbf7dd80652fd283a7562e9263301a48797bc2224cc21a3964e2d5db87` (matched the release's `.sha256` file and GitHub's API digest). Installed as `~/.local/bin/arc-forge`, `arc-cast`, `arc-anvil` after `HOMEBREW_NO_AUTO_UPDATE=1 brew install libusb` (libusb 1.0.30; the only formula added). Upstream Foundry in `~/.foundry/bin` was verified unchanged. All three report `1.7.1-dev`, commit `d497bee` (older than upstream Foundry 1.8.5 on this machine, so A4 is also where any cheatcode or flag difference would surface). `arc-forge script --help` and `arc-forge test --help` list `-n, --network <NETWORK>` with possible values `ethereum, optimism, tempo, arc`. Every flag used in this checklist exists in this build (`verify-contract` takes `-c/--chain`, and `--chain-id` is accepted too). No key was created and nothing was sent to any network.
 - [ ] **A4. Re-test under Arc's runtime.** Upstream `anvil` cannot reproduce Arc. In `contracts/`:
   ```bash
   arc-forge test --network arc          # expect 174 passed, the same as upstream
