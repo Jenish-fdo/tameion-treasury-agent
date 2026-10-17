@@ -11,7 +11,7 @@ import { EmptyState, ErrorState } from '@/components/evidence/States';
 import { ERROR_COPY, type ModelName } from '@/lib/api';
 import { shortenAddress } from '@/lib/utils';
 
-/** Used as the sender when no passkey account is signed in. A well-known local-testnet address, not a real user. */
+/** Used as the sender when no account is signed in. A well-known local-testnet address, not a real user. */
 const DEMO_SENDER = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC';
 const SKELETON_MODELS: ModelName[] = ['kimi', 'qwen', 'jev'];
 
@@ -41,7 +41,7 @@ export default function PaymentCheckPage() {
           <PaymentIntentForm
             onSubmit={handleSubmit}
             isLoading={state.status === 'loading'}
-            fromLabel={address ? `${shortenAddress(address)} (your passkey account)` : `${shortenAddress(DEMO_SENDER)} (demo sender — sign in with a passkey to use yours)`}
+            fromLabel={address ? `${shortenAddress(address)} (your account)` : `${shortenAddress(DEMO_SENDER)} (demo sender)`}
           />
 
           <div aria-live="polite">

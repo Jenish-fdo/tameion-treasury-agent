@@ -19,7 +19,7 @@ import { saveIssued } from '@/lib/dc/store';
 import { shortenAddress } from '@/lib/utils';
 import { CopilotDraftPanel } from './Copilot';
 import { CredentialCard } from './CredentialCard';
-import { PasskeyButton } from './PasskeyButton';
+import { AccountButton } from './AccountButton';
 import { ShareBlock } from './ShareBlock';
 
 type Stage = 'idle' | 'wallet' | 'confirming' | 'done' | 'error';
@@ -59,9 +59,9 @@ export function IssueForm() {
         return;
       }
 
-      if (!signer || !address) throw new Error('Sign in with a passkey to issue.');
+      if (!signer || !address) throw new Error('Issuing on-chain needs an account, and account sign-in is not available yet.');
       setStage('confirming');
-      // Signed in this tab by the passkey account and sent straight to Monad. No extension, no relayer.
+      // Signed in this tab by the connected account and sent straight to the chain. No relayer.
       const hash = await writeRegistry(signer, {
         functionName: 'issueCredential',
         args: [holder, typeHash(record.title), hashRecord(record), BigInt(expiry)],
@@ -113,8 +113,8 @@ export function IssueForm() {
       {needsAccount && (
         <section aria-label="Issuer account" className="rounded border border-review bg-review-soft p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="max-w-md text-sm">Sign in with a passkey to issue. Only accounts the registry owner has authorised can issue.</p>
-            <PasskeyButton />
+            <p className="max-w-md text-sm">Issuing on-chain needs an account, and account sign-in is being rebuilt around Circle wallets. Demo mode, which never touches a chain, still works.</p>
+            <AccountButton />
           </div>
         </section>
       )}
@@ -166,12 +166,12 @@ export function IssueForm() {
         </button>
         {blocked && !busy && (
           <span id="issue-locked" className="text-sm text-ink-soft">
-            {needsAccount ? 'Sign in with a passkey above to issue.' : 'Locked until this account is an authorised issuer.'}
+            {needsAccount ? 'On-chain issuing is unavailable until sign-in returns.' : 'Locked until this account is an authorised issuer.'}
           </span>
         )}
       </div>
       <p role="status" aria-live="polite" className="min-h-5 text-sm font-semibold">
-        {stage === 'confirming' && 'Issuing your credential… signed with your passkey, waiting for Monad to confirm.'}
+        {stage === 'confirming' && 'Issuing your credential… waiting for the chain to confirm.'}
       </p>
     </form>
     </div>

@@ -8,11 +8,11 @@ import { toast } from 'sonner';
 import { useAccount } from '@/components/account';
 import { recordDemoCheck } from '@/lib/dc/insight';
 import { isAnchoringEnabled, writeErrorMessage, writeRegistry } from '@/lib/dc/registry';
-import { PasskeyButton } from './PasskeyButton';
+import { AccountButton } from './AccountButton';
 
 /**
  * Verifying is free and needs no account. This is the optional last step: leave a receipt of the check
- * on Monad (signed by the verifier's passkey account), which is what the verification count, the
+ * on Monad (signed by the verifier's account), which is what the verification count, the
  * history and the issuer's reputation are built from. Demo credentials record in this browser only.
  */
 export function RecordCheck({ id, demo, receiptHref, onRecorded }: { id: Hex; demo: boolean; receiptHref: string; onRecorded: () => void }) {
@@ -27,7 +27,7 @@ export function RecordCheck({ id, demo, receiptHref, onRecorded }: { id: Hex; de
     try {
       if (local) recordDemoCheck(id);
       else if (signer) await writeRegistry(signer, { functionName: 'recordVerification', args: [id] });
-      else throw new Error('Sign in with a passkey first.');
+      else throw new Error('On-chain receipts need an account, and account sign-in is not available yet.');
       setState('done');
       onRecorded();
       toast.success(local ? 'Demo receipt recorded in this browser' : 'Verification recorded on Monad');
@@ -43,7 +43,7 @@ export function RecordCheck({ id, demo, receiptHref, onRecorded }: { id: Hex; de
       <p className="mt-2 text-sm text-ink-soft">
         {local
           ? 'Demo credential: the receipt is kept in this browser only and proves nothing on-chain.'
-          : 'Optional. Record that you checked this credential, and what the registry said, as a transaction from your passkey account.'}
+          : 'Optional. Record that you checked this credential, and what the registry said, as a transaction from your account.'}
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         {state === 'done' ? (
@@ -52,7 +52,7 @@ export function RecordCheck({ id, demo, receiptHref, onRecorded }: { id: Hex; de
             <Link href={receiptHref} className="btn-primary">View receipt</Link>
           </>
         ) : !local && !signer ? (
-          <PasskeyButton label="Sign in to record" />
+          <AccountButton label="Receipts need sign-in (coming soon)" />
         ) : (
           <button type="button" className="btn-secondary" disabled={state === 'busy'} onClick={() => void record()}>
             {state === 'busy' ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Stamp className="h-3.5 w-3.5" aria-hidden="true" />}

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { PasskeyButton } from '@/components/dc/PasskeyButton';
+import { AccountButton } from '@/components/dc/AccountButton';
 
 const LINKS = [
   { href: '/#how-it-works', label: 'How it works' },
@@ -35,7 +35,7 @@ export function Header() {
             <Link href="/payment-check" className="btn-signal">
               Open payment check
             </Link>
-            <PasskeyButton />
+            <AccountButton />
           </div>
         </div>
       </header>

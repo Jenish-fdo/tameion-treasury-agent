@@ -6,7 +6,7 @@ import { Toaster } from 'sonner';
 import type { ReactNode } from 'react';
 import '@/styles/dc.css';
 import { PageTransition } from './motion';
-import { PasskeyButton } from './PasskeyButton';
+import { AccountButton } from './AccountButton';
 
 
 const LINKS = [
@@ -38,7 +38,7 @@ export function DcHeader({ wallet = true }: { wallet?: boolean }) {
             <Link href="/issue" className="btn-signal">
               Issue credential
             </Link>
-            {wallet && <PasskeyButton />}
+            {wallet && <AccountButton />}
           </div>
         </div>
       </header>

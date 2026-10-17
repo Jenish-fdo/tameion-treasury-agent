@@ -10,7 +10,7 @@ import { demoInsight, type ActivityItem, type IssuerRecord as Record_ } from '@/
 import { isAnchoringEnabled } from '@/lib/dc/registry';
 import { loadIssued } from '@/lib/dc/store';
 import { ActivityList } from './InsightPanel';
-import { PasskeyButton } from './PasskeyButton';
+import { AccountButton } from './AccountButton';
 
 const NO_ID = `0x${'0'.repeat(64)}` as Hex;
 
@@ -54,8 +54,8 @@ export function IssuerRecord() {
 
       {!issuer ? (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <p className="max-w-lg text-sm text-ink-soft">Sign in with your passkey to see your reputation score and recent activity on the registry.</p>
-          <PasskeyButton />
+          <p className="max-w-lg text-sm text-ink-soft">Sign in to see your reputation score and recent activity on the registry. Sign-in is not available yet.</p>
+          <AccountButton />
         </div>
       ) : (
         <div className="mt-4 grid gap-6 md:grid-cols-[auto_1.2fr]">

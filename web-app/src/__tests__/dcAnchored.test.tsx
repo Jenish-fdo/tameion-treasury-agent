@@ -53,13 +53,13 @@ describe('verify page, registry configured', () => {
     expect(screen.getAllByText(TX).length).toBeGreaterThan(0);
   });
 
-  it('shows the on-chain record, and asks for a passkey before recording a receipt', async () => {
+  it('shows the on-chain record, and says receipts need sign-in, which is not available yet', async () => {
     mockRead.mockResolvedValue(chain());
     view();
     expect(await screen.findByText('Read from the registry')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText(/Event history needs the Envio indexer/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Sign in to record/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Receipts need sign-in/ })).toBeInTheDocument();
   });
 
   it('edited details in the link: DETAILS DO NOT MATCH, never VERIFIED', async () => {

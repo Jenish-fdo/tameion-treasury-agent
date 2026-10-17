@@ -96,13 +96,13 @@ export async function readCredentialExtras(id: Hex): Promise<CredentialExtras> {
   return { verificationCount: Number(count) };
 }
 
-// --- writes, signed in this tab by the passkey account -------------------------------------------------------------
+// --- writes, signed in this tab by the connected account -------------------------------------------------------------
 
 type RegistryWrite =
   | { functionName: 'issueCredential'; args: readonly [Address, Hex, Hex, bigint] }
   | { functionName: 'recordVerification'; args: readonly [Hex] };
 
-/** Sends one registry transaction from the unlocked passkey account and waits for it to be mined. */
+/** Sends one registry transaction from the connected account and waits for it to be mined. */
 export async function writeRegistry(signer: LocalAccount, call: RegistryWrite): Promise<Hex> {
   if (!registryAddress) throw new Error('registry not configured');
   const wallet = createWalletClient({ account: signer, chain: arcChain, transport: http(arcChain.rpcUrls.default.http[0]) });
@@ -121,6 +121,6 @@ export function writeErrorMessage(e: unknown, fallback: string): string {
   const msg = e instanceof Error ? `${e.name} ${e.message}` : String(e);
   if (name === 'NotAuthorizedIssuer' || /NotAuthorizedIssuer/.test(msg)) return 'This account is not an authorised issuer on the registry. Ask the registry owner to authorise it, then try again.';
   if (name === 'CredentialAlreadyExists' || /CredentialAlreadyExists|already exists/i.test(msg)) return 'An identical credential already exists. Change any detail and try again.';
-  if (/insufficient funds|exceeds the balance/i.test(msg)) return 'Your passkey account has no USDC for gas on Arc. On testnet, get USDC from the faucet in the account menu and try again.';
+  if (/insufficient funds|exceeds the balance/i.test(msg)) return 'This account has no USDC for gas on Arc. On testnet, get USDC from the Circle faucet and try again.';
   return fallback;
 }

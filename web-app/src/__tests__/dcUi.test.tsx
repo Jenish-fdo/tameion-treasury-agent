@@ -10,7 +10,7 @@ import { IssueForm } from '@/components/dc/IssueForm';
 import { VerifyView } from '@/components/dc/VerifyView';
 import { STATUS_LABEL, encodePayload, idForPayload, type CredentialStatus, type SharePayload } from '@/lib/dc/credential';
 
-// No account, chain or network in these tests (the passkey module is replaced in jest.setup.ts).
+// No account, chain or network in these tests (the account layer is a signed-out stub).
 jest.mock('@/lib/arc', () => ({ arcChain: { id: 5042002, rpcUrls: { default: { http: ['http://localhost:0'] } } }, ARC_EXPLORER_URL: 'https://explorer.example', FAUCET_URL: 'https://faucet.example' }));
 const mockLenis = jest.fn(() => ({ destroy: jest.fn() }));
 jest.mock('lenis', () => ({ __esModule: true, default: function Lenis() { return mockLenis(); } }));

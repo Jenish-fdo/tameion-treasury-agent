@@ -62,11 +62,11 @@ describe('Payment Risk Check page', () => {
     });
   });
 
-  it('uses the signed-in passkey account as the sender', async () => {
+  it('uses the signed-in account as the sender', async () => {
     mockAddress = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
     fetchMock().mockResolvedValue(jsonResponse(200, rawResult('GO')));
     render(<PaymentCheckPage />);
-    expect(screen.getByText(/your passkey account/)).toBeInTheDocument();
+    expect(screen.getByText(/your account/)).toBeInTheDocument();
     await loadSafeDemoAndAnalyze();
     await screen.findByTestId('verdict-headline');
     expect(JSON.parse(fetchMock().mock.calls[0][1].body).from).toBe(mockAddress);
