@@ -2,5 +2,3 @@ packages:
   - 'contracts'
   - 'backend'
   - 'web-app'
-  - 'mobile-sdk'
-  - 'metamask-snap'

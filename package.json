@@ -21,9 +21,7 @@
   "workspaces": [
     "contracts",
     "backend",
-    "web-app",
-    "mobile-sdk",
-    "metamask-snap"
+    "web-app"
   ],
   "scripts": {
     "build": "pnpm -r build",
