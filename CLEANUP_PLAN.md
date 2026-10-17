@@ -379,3 +379,29 @@ Each phase ends in a green `pnpm -r typecheck && pnpm -r test` (and `forge test`
 - **Not scanned:** binary files (mp4/wav/png/jpg), `node_modules/`, vendored `contracts/lib`.
 - **Not verified:** that the current tests pass; Arc/Circle facts in §9.7.
 - Env files: key names listed; **values not read** (apart from public, non-secret chain config values: contract addresses and chain id).
+
+---
+
+## Phase 1 status (completed 2026-10-17, branch `chore/phase1-removal`)
+
+Five commits, one per removal group, each followed by the relevant tests. Everything removed is preserved in tag `monad-metropolis-final`.
+
+| Commit | Group | Tests after |
+|---|---|---|
+| `b2144a2` | demo-production, submission-package, mobile-sdk, metamask-snap, indexer; workspace + lockfile | forge 178, backend 133, web 242 |
+| `dba3121` | unused contracts, scripts, tests, broadcast logs | forge 65 |
+| `ef02341` | backend identity/trust-score/agent code, prisma | backend 133, e2e 18 (real Anvil run), tsc clean |
+| `19110ad` | web routes, story/dashboard/home components, dead libs | web 176, tsc clean, `next build` OK |
+| `dacdbd6` | root env template, stale docs, junk | all of the above re-run |
+
+Deviations from the plan above (kept on purpose, to go in Phase 2):
+- `CviAttestationOracle`, `ICviVerifier`, `CviGate.t.sol`, `DeployCredentialFlow.s.sol`: `CredentialRegistry` still imports `ICviVerifier`; they leave together with the CVI gate.
+- `backend/scripts/deploy-local.sh` kept (trimmed to the registry only): the e2e suite needs it.
+- `components/dc/{CviBadge,ScrollStory,SmoothScroll,PasskeyButton,IssuerRecord,InsightPanel,Copilot}`, `lib/mera.ts`, `evidence/CasePanel`: still wired into the live flow or reusable.
+- `docs/security-review.md` kept: findings M-1, M-2, M-7 apply to `CredentialRegistry`.
+- Root `.env` is a local file that differs from the old template; it was not touched and is not tracked.
+- `RiskSignals` (`senderTrustScore`/`recipientTrustScore`) stays in the backend as a generic slot for Phase 4 vendor-risk signals; `IntentService` passes none for now.
+
+New facts found along the way:
+- The backend e2e suite had never been run in the repo state I found; it now passes (18/18) against Anvil.
+- `docs/README.md` still links to pages that do not exist; it is rewritten in Phase 2/7.
