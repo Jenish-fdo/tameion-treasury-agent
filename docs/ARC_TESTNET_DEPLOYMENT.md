@@ -67,17 +67,18 @@ Rehearsed locally on 2026-10-17, not on Arc: the whole sequence below (throwaway
   | New opcodes (we compile for Prague) | whole bytecode | the full suite |
   | `block.chainid` is 5042002 | EIP-712 domain separator | `test_CreateWithSig_SignatureIsBoundToThisRegistryAndChain` |
   **A4 result (2026-10-17).** `arc-forge test --network arc` (Arc Foundry `1.7.1-dev`, commit `d497bee`, solc 0.8.28): **174 passed, 0 failed, 0 skipped**, exit code 0, the same 174 tests as upstream `forge` 1.8.5 (identical test names, none missing or extra). That includes every signature path: the 29 `CreateWithSig`/`RevokeWithSig`/`Approval` tests on `MandateRegistry` (with the 2 ERC-1271 mock-wallet cases) and the 8 credential signed-issuance tests, so `ecrecover` and ERC-1271 work under Arc's runtime as far as these tests reach. Gas differs: 165 of 169 comparable tests use different gas, **16.6% less in total on Arc** (for example `new MandateRegistry` 2.92M vs 3.21M, `registerBusiness` 71.5k vs 93.6k). One test's reported gas looks inverted (`test_CreateWithSig_SignatureIsBoundToThisRegistryAndChain`: upstream 204k, Arc 3.08M), but upstream's own trace of that test shows the same 3.2M contract creation, so the 204k is an accounting quirk in upstream's summary number, not an Arc cost. Treat gas figures as indicative: deployment cost still has to come from the live dry run (A6). Remaining differences that a local run cannot show are the ones the README names: block production, finality and hardfork activation.
-- [ ] **A5. Re-run the backend end-to-end suite on an Arc local node.** `deploy-local.sh` calls `forge` and `cast` by name, so put the Arc tools first on `PATH` under those names for this one shell:
+- [x] **A5. Re-run the backend end-to-end suite on an Arc local node** (done 2026-10-17; record below). `deploy-local.sh` calls `forge` and `cast` by name, so put the Arc tools first on `PATH` under those names for this one shell:
   ```bash
   mkdir -p /tmp/arc-shim && ln -sf "$(command -v arc-forge)" /tmp/arc-shim/forge \
     && ln -sf "$(command -v arc-cast)" /tmp/arc-shim/cast && ln -sf "$(command -v arc-anvil)" /tmp/arc-shim/anvil
   cd backend && cp .env.local /tmp/env.local.bak          # deploy-local.sh OVERWRITES it
-  PATH=/tmp/arc-shim:$PATH anvil --network arc &  ANVIL_PID=$!   # check `arc-anvil --help` for the chain-id and funding flags
+  PATH=/tmp/arc-shim:$PATH anvil --network arc --chain-id 5042002 &  ANVIL_PID=$!   # --chain-id is required: arc-anvil defaults to 31337
   PATH=/tmp/arc-shim:$PATH bash scripts/deploy-local.sh
   ./node_modules/.bin/tsx --test test/e2e/*.e2e.ts        # expect 36 pass
   kill $ANVIL_PID; cp /tmp/env.local.bak .env.local
   ```
   Kill by the saved PID only, never by name. Pass criterion: 36 of 36. The node's pre-funded accounts come from a public test mnemonic: they must never hold real funds.
+  **A5 result (2026-10-17).** `arc-anvil --network arc --chain-id 5042002` (Arc Foundry `1.7.1-dev`; base fee 20 gwei, gas price 21 gwei, the same fee floor as the live chain), with `forge`/`cast`/`anvil` resolved to the Arc builds through a PATH shim. `deploy-local.sh` deployed `CredentialRegistry`, `MandateRegistry` and `DecisionLog` with `arc-forge create` and `arc-cast`, then `tsx --test test/e2e/*.e2e.ts`: **36 tests, 36 passed, 0 failed, 0 skipped** (18 credential and intent API, 18 treasury API), exit 0. Without `--chain-id 5042002` the node comes up as chain 31337, which the backend's signed transactions would not match. Housekeeping: only the node I started was stopped (by PID), `backend/.env.local` was restored byte for byte, the shim was removed, your upstream Foundry and the three `arc-*` binaries were verified unchanged, and no port stayed open. The dev accounts here come from a public test mnemonic and held only local test balances. Limits: this is a local node, so it exercises Arc's fee rules and execution semantics but not real block production, finality or the live network.
 - [ ] **A6. Dry run against the live chain** (read-only; `--broadcast` is absent). This is the first time the real RPC's fee and gas numbers are seen:
   ```bash
   cd contracts
