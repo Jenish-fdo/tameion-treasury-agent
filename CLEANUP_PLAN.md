@@ -418,7 +418,7 @@ Five commits, tests run after each. Arc details were checked against Circle's cu
 | `dfda5d3` | web: CVI removed; new `useIssuerAuthorization` hook; reputation re-weighted | web 172, build OK |
 | `c7be821` | one Arc config module per app; `MONAD_*` → `ARC_*`; Foundry alias | forge 47, backend 135, e2e 18, web 172 |
 | `d2dbc9a` | Mera removed; signed-out account stub + disabled `AccountButton` | web 174, build OK |
-| (this one) | rebrand copy, READMEs, docs index, hosting, api.yaml | all of the above re-run |
+| `0281add` | rebrand copy, READMEs, docs index, hosting, api.yaml | all of the above re-run |
 
 **Arc facts used** (Circle docs, 2026-10-17): testnet chain ID 5042002, RPC `https://rpc.testnet.arc.io`, explorer `https://explorer.testnet.arc.io`, faucet `https://faucet.circle.com`; mainnet exists (chain ID 5042, `https://rpc.mainnet.arc.io`, `https://explorer.arc.io`). USDC `0x3600…0000` on both: native gas token with 18 decimals, ERC-20 interface with 6. The docs moved from `docs.arc.network` / `rpc.testnet.arc.network` to the `arc.io` domains; some third-party pages still show the old hosts.
 
