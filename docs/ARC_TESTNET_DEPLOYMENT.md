@@ -50,6 +50,7 @@ Rehearsed locally on 2026-10-17, not on Arc: the whole sequence below (throwaway
   mv forge ~/.local/bin/arc-forge && mv cast ~/.local/bin/arc-cast && mv anvil ~/.local/bin/arc-anvil
   arc-forge --version && arc-anvil --version && arc-cast --version
   ```
+  **macOS prerequisite found during the install on 2026-10-17:** the release `v0.8.0-2` binaries are linked against Homebrew's `libusb` (hardware-wallet support) at `/opt/homebrew/opt/libusb/lib/libusb-1.0.0.dylib`. Without it every `arc-*` command fails at start-up with `dyld: Library not loaded`. Install it first with `brew install libusb` (or `HOMEBREW_NO_AUTO_UPDATE=1 brew install libusb` to leave your other formulae alone). Upstream `forge` does not need it.
   The binaries are renamed `arc-*`, so they do not replace your upstream `forge`. Arc Foundry is **not** installable through `foundryup`. Do not run the extracted binaries from inside the downloaded folder. If `~/.local/bin` is not on your `PATH`, add `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshrc` yourself; nothing edits it for you. Arc Foundry ships `forge`, `cast`, `anvil` and `chisel`; `chisel` does not work on Arc and is not needed.
 - [ ] **A4. Re-test under Arc's runtime.** Upstream `anvil` cannot reproduce Arc. In `contracts/`:
   ```bash
